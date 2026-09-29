@@ -3,7 +3,10 @@
 --
 -- Global constants
 --
+-- ZX Spectrum Next for MEGA65 (MegaZXNext)
+--
 -- MiSTer2MEGA65 done by sy2002 and MJoergen in 2022 and licensed under GPL v3
+-- MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
 ----------------------------------------------------------------------------------
 
 library IEEE;
@@ -40,8 +43,8 @@ constant QNICE_FIRMWARE           : string  := QNICE_FIRMWARE_M2M;
 -- then add all the clocks speeds here by adding more constants.
 ----------------------------------------------------------------------------------------------------------
 
--- @TODO: Your core's clock speed
-constant CORE_CLK_SPEED       : natural := 54_000_000;   -- @TODO YOURCORE expects 54 MHz
+-- ZX Spectrum Next: 28 MHz main clock (see clk.vhd)
+constant CORE_CLK_SPEED       : natural := 28_000_000;
 
 -- System clock speed (crystal that is driving the FPGA) and QNICE clock speed
 -- !!! Do not touch !!!
@@ -54,8 +57,7 @@ constant QNICE_CLK_SPEED      : natural := 50_000_000;   -- a change here has de
 
 -- Rendering constants (in pixels)
 --    VGA_*   size of the core's target output post scandoubler
---    If in doubt, use twice the values found in this link:
---    https://mister-devel.github.io/MkDocs_MiSTer/advanced/nativeres/#arcade-core-default-native-resolutions
+--    The ZX Next outputs 720 x 288 (50 Hz) at a 14 MHz pixel clock, i.e. 720 x 576 post scandoubler
 constant VGA_DX               : natural := 720;
 constant VGA_DY               : natural := 576;
 
@@ -75,16 +77,11 @@ constant VRAM_ADDR_WIDTH      : natural := f_log2(CHAR_MEM_SIZE);
 ----------------------------------------------------------------------------------------------------------
 
 constant C_HMAP_M2M           : std_logic_vector(15 downto 0) := x"0000";     -- Reserved for the M2M framework
-constant C_HMAP_DEMO          : std_logic_vector(15 downto 0) := x"0200";     -- Start address reserved for core
+-- The ZX Next's 2 MB of RAM live in the SDRAM (R4, R5, R6); the core does not use the HyperRAM
 
 ----------------------------------------------------------------------------------------------------------
 -- Virtual Drive Management System
 ----------------------------------------------------------------------------------------------------------
-
--- example virtual drive handler, which is connected to nothing and only here to demo
--- the file- and directory browsing capabilities of the firmware
-constant C_DEV_DEMO_VD        : std_logic_vector(15 downto 0) := x"0101";
-constant C_DEV_DEMO_NOBUFFER  : std_logic_vector(15 downto 0) := x"AAAA";
 
 -- Virtual drive management system (handled by vdrives.vhd and the firmware)
 -- If you are not using virtual drives, make sure that:
@@ -94,12 +91,10 @@ constant C_DEV_DEMO_NOBUFFER  : std_logic_vector(15 downto 0) := x"AAAA";
 -- Otherwise make sure that you wire C_VD_DEVICE in the qnice_ramrom_devices process and that you
 -- have as many appropriately sized RAM buffers for disk images as you have drives
 type vd_buf_array is array(natural range <>) of std_logic_vector;
-constant C_VDNUM              : natural := 3;                                          -- amount of virtual drives; maximum is 15
-constant C_VD_DEVICE          : std_logic_vector(15 downto 0) := C_DEV_DEMO_VD;        -- device number of vdrives.vhd device
-constant C_VD_BUFFER          : vd_buf_array := (  C_DEV_DEMO_NOBUFFER,
-                                                   C_DEV_DEMO_NOBUFFER,
-                                                   C_DEV_DEMO_NOBUFFER,
-                                                   x"EEEE");                           -- Always finish the array using x"EEEE"
+-- The ZX Next accesses the SD card directly (SPI), therefore there are no virtual drives
+constant C_VDNUM              : natural := 0;                                          -- amount of virtual drives; maximum is 15
+constant C_VD_DEVICE          : std_logic_vector(15 downto 0) := x"EEEE";              -- device number of vdrives.vhd device
+constant C_VD_BUFFER          : vd_buf_array := (  x"EEEE", x"EEEE");                  -- Always finish the array using x"EEEE"
 
 ----------------------------------------------------------------------------------------------------------
 -- System for handling simulated cartridges and ROM loaders
@@ -164,7 +159,7 @@ constant C_CRTROMS_AUTO          : crtrom_buf_array := ( x"EEEE", x"EEEE", x"EEE
 -- that you are porting: sys/sys_top.v
 ----------------------------------------------------------------------------------------------------------
 
--- Sample values from the C64: @TODO: Adjust to your needs
+-- Values from the MiSTer framework's defaults (as used by the C64 core)
 constant audio_flt_rate : std_logic_vector(31 downto 0) := std_logic_vector(to_signed(7056000, 32));
 constant audio_cx       : std_logic_vector(39 downto 0) := std_logic_vector(to_signed(4258969, 40));
 constant audio_cx0      : std_logic_vector( 7 downto 0) := std_logic_vector(to_signed(3, 8));

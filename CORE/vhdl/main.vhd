@@ -1,9 +1,14 @@
 ----------------------------------------------------------------------------------
--- MiSTer2MEGA65 Framework
+-- ZX Spectrum Next for MEGA65 (MegaZXNext)
 --
--- Wrapper for the MiSTer core that runs exclusively in the core's clock domanin
+-- Wrapper for the MiSTer core that runs exclusively in the core's clock domain
+--
+-- Contains the ZX Next (zxnext_top_m65), the SDRAM controller for the ZX Next's
+-- 2 MB of RAM, the DS1307 RTC emulation and the conversion of audio, video,
+-- keyboard and joysticks between the ZX Next and the M2M framework.
 --
 -- MiSTer2MEGA65 done by sy2002 and MJoergen in 2022 and licensed under GPL v3
+-- MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
 ----------------------------------------------------------------------------------
 
 library ieee;
@@ -13,12 +18,17 @@ use ieee.numeric_std.all;
 library work;
 use work.video_modes_pkg.all;
 
+library zxnext;
+
 entity main is
-   generic (
-      G_VDNUM                 : natural                     -- amount of virtual drives
-   );
    port (
-      clk_main_i              : in  std_logic;
+      clk_main_i              : in  std_logic;              -- 28 MHz
+      clk_main_n_i            : in  std_logic;              -- 28 MHz, 180 degrees
+      clk_14_i                : in  std_logic;              -- 14 MHz
+      clk_7_i                 : in  std_logic;              --  7 MHz
+      clk_sdram_i             : in  std_logic;              -- 112 MHz
+      rst_sdram_i             : in  std_logic;              -- synchronous to clk_sdram_i
+
       reset_soft_i            : in  std_logic;
       reset_hard_i            : in  std_logic;
       pause_i                 : in  std_logic;
@@ -26,6 +36,9 @@ entity main is
       -- MiSTer core main clock speed:
       -- Make sure you pass very exact numbers here, because they are used for avoiding clock drift at derived clocks
       clk_main_speed_i        : in  natural;
+
+      -- Core configuration (from the options menu, main clock domain)
+      cpu_speed_sw_i          : in  std_logic;              -- pulse: cycle through the CPU speeds
 
       -- Video output
       video_ce_o              : out std_logic;
@@ -37,6 +50,7 @@ entity main is
       video_hs_o              : out std_logic;
       video_hblank_o          : out std_logic;
       video_vblank_o          : out std_logic;
+      video_scandoubler_i     : in  std_logic;              -- VGA: 0 = native 15 kHz, 1 = 31 kHz
 
       -- Audio output (Signed PCM)
       audio_left_o            : out signed(15 downto 0);
@@ -62,81 +76,369 @@ entity main is
       pot1_x_i                : in  std_logic_vector(7 downto 0);
       pot1_y_i                : in  std_logic_vector(7 downto 0);
       pot2_x_i                : in  std_logic_vector(7 downto 0);
-      pot2_y_i                : in  std_logic_vector(7 downto 0)
+      pot2_y_i                : in  std_logic_vector(7 downto 0);
+
+      -- MEGA65 real time clock (MiSTer format)
+      rtc_i                   : in  std_logic_vector(64 downto 0);
+
+      -- SD card: the ZX Next has two SPI chip selects
+      sd_cs0_n_o              : out std_logic;
+      sd_cs1_n_o              : out std_logic;
+      sd_sclk_o               : out std_logic;
+      sd_mosi_o               : out std_logic;
+      sd_miso_i               : in  std_logic;
+      sd_active_o             : out std_logic;              -- for the drive led
+
+      -- SDRAM (tri-state buffers are in the top level file)
+      sdram_clk_o             : out std_logic;
+      sdram_cke_o             : out std_logic;
+      sdram_cs_n_o            : out std_logic;
+      sdram_ras_n_o           : out std_logic;
+      sdram_cas_n_o           : out std_logic;
+      sdram_we_n_o            : out std_logic;
+      sdram_ba_o              : out std_logic_vector(1 downto 0);
+      sdram_a_o               : out std_logic_vector(12 downto 0);
+      sdram_dqml_o            : out std_logic;
+      sdram_dqmh_o            : out std_logic;
+      sdram_dq_out_o          : out std_logic_vector(15 downto 0);
+      sdram_dq_oe_n_o         : out std_logic_vector(15 downto 0);
+      sdram_dq_in_i           : in  std_logic_vector(15 downto 0)
    );
 end entity main;
 
 architecture synthesis of main is
 
--- @TODO: Remove these demo core signals
-signal keyboard_n          : std_logic_vector(79 downto 0);
+   component rtc is
+      generic (
+         CLOCK_RATE : integer
+      );
+      port (
+         clk        : in  std_logic;
+         reset      : in  std_logic;
+         RTC        : in  std_logic_vector(64 downto 0);
+         scl_i      : in  std_logic;
+         sda_i      : in  std_logic;
+         sda_o      : out std_logic
+      );
+   end component rtc;
+
+   -- MiSTer's "MiSTer" machine id: tells the ZX Next firmware that there is no flash, no
+   -- bootstrap option and no Raspberry Pi
+   constant C_MACHINE_ID      : unsigned(7 downto 0) := X"DA";
+   constant C_BOARD_ISSUE     : unsigned(3 downto 0) := X"0";
+
+   signal reset_core          : std_logic;
+   signal hw_reset_cnt        : unsigned(15 downto 0) := (others => '0');
+   signal hw_reset            : std_logic := '0';
+
+   -- ZX Next memory ports
+   signal ram_a_addr          : std_logic_vector(20 downto 0);
+   signal ram_a_req           : std_logic;
+   signal ram_a_rd_n          : std_logic;
+   signal ram_a_wr_data       : std_logic_vector(7 downto 0);
+   signal ram_a_rd_data       : std_logic_vector(7 downto 0);
+   signal ram_a_wait          : std_logic;
+   signal ram_b_addr          : std_logic_vector(20 downto 0);
+   signal ram_b_req           : std_logic;
+   signal ram_b_rd_data       : std_logic_vector(7 downto 0);
+
+   -- keyboard
+   signal membrane_row        : std_logic_vector(2 downto 0);
+   signal membrane_col        : std_logic_vector(6 downto 0);
+   signal fn_keys             : std_logic_vector(10 downto 1);
+
+   -- joysticks: active high  MODE X Z Y START A C B U D L R
+   signal joy_left            : std_logic_vector(11 downto 0);
+   signal joy_right           : std_logic_vector(11 downto 0);
+
+   -- audio
+   signal audio_l_u           : std_logic_vector(11 downto 0);
+   signal audio_r_u           : std_logic_vector(11 downto 0);
+
+   -- video (CLK_14 domain)
+   signal rgb                 : std_logic_vector(8 downto 0);
+   signal rgb_vs_n            : std_logic;
+   signal rgb_hs_n            : std_logic;
+   signal rgb_vb_n            : std_logic;
+   signal rgb_hb_n            : std_logic;
+   signal clk14_toggle        : std_logic := '0';
+
+   -- video (main clock domain)
+   signal v_rgb               : std_logic_vector(8 downto 0);
+   signal v_vs_n              : std_logic;
+   signal v_hs_n              : std_logic;
+   signal v_vb_n              : std_logic;
+   signal v_hb_n              : std_logic;
+   signal v_toggle            : std_logic := '0';
+   signal v_toggle_d          : std_logic := '0';
+   signal video_ce            : std_logic := '0';
+
+   -- RTC (I2C)
+   signal i2c_scl             : std_logic;
+   signal i2c_sda_to_rtc      : std_logic;
+   signal i2c_sda_from_rtc    : std_logic;
+
+   -- SD card
+   signal sd_cs0_n            : std_logic;
+   signal sd_cs1_n            : std_logic;
+   signal sd_sclk             : std_logic;
+   signal sd_sclk_d           : std_logic := '0';
+   signal sd_act_cnt          : unsigned(21 downto 0) := (others => '0');
+
+   -- first order DC blocker for the unsigned ZX Next audio
+   function expand3(c : std_logic_vector(2 downto 0)) return std_logic_vector is
+   begin
+      return c & c & c(2 downto 1);
+   end function expand3;
 
 begin
 
-   -- @TODO: Add the actual MiSTer core here
-   -- The demo core's purpose is to show a test image and to make sure, that the MiSTer2MEGA65 framework
-   -- can be synthesized and run stand-alone without an actual MiSTer core being there, yet
-   i_democore : entity work.democore
+   ---------------------------------------------------------------------------------------------
+   -- Resets
+   ---------------------------------------------------------------------------------------------
+
+   -- Short press of the MEGA65 reset button: ZX Next soft reset
+   -- Long press of the MEGA65 reset button:  ZX Next hard reset (reloads the firmware from SD card)
+   reset_core <= reset_soft_i or reset_hard_i;
+
+   hard_reset_proc : process (clk_main_i)
+   begin
+      if rising_edge(clk_main_i) then
+         if hw_reset_cnt /= 0 then
+            hw_reset_cnt <= hw_reset_cnt - 1;
+         end if;
+         if reset_hard_i = '1' then
+            hw_reset_cnt <= (others => '1');
+         end if;
+         hw_reset <= '1' when hw_reset_cnt /= 0 else '0';
+      end if;
+   end process hard_reset_proc;
+
+   ---------------------------------------------------------------------------------------------
+   -- ZX Spectrum Next
+   ---------------------------------------------------------------------------------------------
+
+   i_zxnext_top : entity zxnext.zxnext_top_m65
       port map (
-         clk_main_i           => clk_main_i,
+         g_machine_id      => C_MACHINE_ID,
+         g_board_issue     => C_BOARD_ISSUE,
 
-         reset_i              => reset_soft_i or reset_hard_i,       -- long and short press of reset button mean the same
-         pause_i              => pause_i,
+         CLK_28            => clk_main_i,
+         CLK_28_n          => clk_main_n_i,
+         CLK_14            => clk_14_i,
+         CLK_7             => clk_7_i,
 
-         ball_col_rgb_i       => x"EE4020",                          -- ball color (RGB): orange
-         paddle_speed_i       => x"1",                               -- paddle speed is about 50 pixels / sec (due to 50 Hz)
+         HW_RESET          => hw_reset,
+         SW_RESET          => reset_core,
 
-         keyboard_n_i         => keyboard_n,                         -- move the paddle with the cursor left/right keys...
-         joy_up_n_i           => joy_1_up_n_i,                       -- ... or move the paddle with a joystick in port #1
-         joy_down_n_i         => joy_1_down_n_i,
-         joy_left_n_i         => joy_1_left_n_i,
-         joy_right_n_i        => joy_1_right_n_i,
-         joy_fire_n_i         => joy_1_fire_n_i,
+         CPU_SPEED         => open,
+         CPU_SPEED_SW      => cpu_speed_sw_i,
+         CPU_WAIT          => ram_a_wait,
 
-         vga_ce_o             => video_ce_o,
-         vga_red_o            => video_red_o,
-         vga_green_o          => video_green_o,
-         vga_blue_o           => video_blue_o,
-         vga_vs_o             => video_vs_o,
-         vga_hs_o             => video_hs_o,
-         vga_hblank_o         => video_hblank_o,
-         vga_vblank_o         => video_vblank_o,
+         RAM_A_ADDR        => ram_a_addr,
+         RAM_A_REQ         => ram_a_req,
+         RAM_A_RD_n        => ram_a_rd_n,
+         RAM_A_DI          => ram_a_rd_data,
+         RAM_A_DO          => ram_a_wr_data,
 
-         audio_left_o         => audio_left_o,
-         audio_right_o        => audio_right_o
-      ); -- i_democore
+         RAM_B_ADDR        => ram_b_addr,
+         RAM_B_REQ         => ram_b_req,
+         RAM_B_DI          => ram_b_rd_data,
 
-   -- On video_ce_o and video_ce_ovl_o: You have an important @TODO when porting a core:
-   -- video_ce_o: You need to make sure that video_ce_o divides clk_main_i such that it transforms clk_main_i
-   --             into the pixelclock of the core (means: the core's native output resolution pre-scandoubler)
-   -- video_ce_ovl_o: Clock enable for the OSM overlay and for sampling the core's (retro) output in a way that
-   --             it is displayed correctly on a "modern" analog input device: Make sure that video_ce_ovl_o
-   --             transforms clk_main_o into the post-scandoubler pixelclock that is valid for the target
-   --             resolution specified by VGA_DX/VGA_DY (globals.vhd)
-   -- video_retro15kHz_o: '1', if the output from the core (post-scandoubler) in the retro 15 kHz analog RGB mode.
-   --             Hint: Scandoubler off does not automatically mean retro 15 kHz on.
-   video_ce_ovl_o <= video_ce_o;
+         membrane_row_o    => membrane_row,
+         membrane_col_i    => membrane_col,
+         fn_keys_i         => fn_keys,
 
-   -- @TODO: Keyboard mapping and keyboard behavior
-   -- Each core is treating the keyboard in a different way: Some need low-active "matrices", some
-   -- might need small high-active keyboard memories, etc. This is why the MiSTer2MEGA65 framework
-   -- lets you define literally everything and only provides a minimal abstraction layer to the keyboard.
-   -- You need to adjust keyboard.vhd to your needs
+         sd_cs0_n_o        => sd_cs0_n,
+         sd_cs1_n_o        => sd_cs1_n,
+         sd_sclk_o         => sd_sclk,
+         sd_mosi_o         => sd_mosi_o,
+         sd_miso_i         => sd_miso_i,
+
+         joy_left          => joy_left,
+         joy_right         => joy_right,
+
+         audio_L           => audio_l_u,
+         audio_R           => audio_r_u,
+
+         ear_port_i        => '1',
+         mic_port_o        => open,
+
+         RGB               => rgb,
+         RGB_VS_n          => rgb_vs_n,
+         RGB_HS_n          => rgb_hs_n,
+         RGB_VB_n          => rgb_vb_n,
+         RGB_HB_n          => rgb_hb_n,
+         RGB_NTSC          => open,
+         center            => '0',
+
+         i2c_scl_o         => i2c_scl,
+         i2c_sda_o         => i2c_sda_to_rtc,
+         i2c_sda_i         => i2c_sda_from_rtc,
+
+         uart_rx_i         => '1',
+         uart_tx_o         => open,
+         esp_reset_o       => open
+      ); -- i_zxnext_top
+
+   ---------------------------------------------------------------------------------------------
+   -- SDRAM: 2 MB of ZX Next memory
+   ---------------------------------------------------------------------------------------------
+
+   i_sdram : entity work.sdram_zxn
+      port map (
+         clk_i           => clk_sdram_i,
+         rst_i           => rst_sdram_i,
+
+         ram_a_addr_i    => ram_a_addr,
+         ram_a_req_i     => ram_a_req,
+         ram_a_rd_n_i    => ram_a_rd_n,
+         ram_a_di_i      => ram_a_wr_data,
+         ram_a_do_o      => ram_a_rd_data,
+         ram_a_wait_o    => ram_a_wait,
+
+         ram_b_addr_i    => ram_b_addr,
+         ram_b_req_i     => ram_b_req,
+         ram_b_do_o      => ram_b_rd_data,
+
+         sdram_clk_o     => sdram_clk_o,
+         sdram_cke_o     => sdram_cke_o,
+         sdram_cs_n_o    => sdram_cs_n_o,
+         sdram_ras_n_o   => sdram_ras_n_o,
+         sdram_cas_n_o   => sdram_cas_n_o,
+         sdram_we_n_o    => sdram_we_n_o,
+         sdram_ba_o      => sdram_ba_o,
+         sdram_a_o       => sdram_a_o,
+         sdram_dqml_o    => sdram_dqml_o,
+         sdram_dqmh_o    => sdram_dqmh_o,
+         sdram_dq_out_o  => sdram_dq_out_o,
+         sdram_dq_oe_n_o => sdram_dq_oe_n_o,
+         sdram_dq_in_i   => sdram_dq_in_i
+      ); -- i_sdram
+
+   ---------------------------------------------------------------------------------------------
+   -- Real time clock: DS1307 emulation on the ZX Next's I2C bus
+   ---------------------------------------------------------------------------------------------
+
+   i_rtc : rtc
+      generic map (
+         CLOCK_RATE => 28_000_000
+      )
+      port map (
+         clk        => clk_main_i,
+         reset      => reset_core,
+         RTC        => rtc_i,
+         scl_i      => i2c_scl,
+         sda_i      => i2c_sda_to_rtc,
+         sda_o      => i2c_sda_from_rtc
+      ); -- i_rtc
+
+   ---------------------------------------------------------------------------------------------
+   -- Keyboard
+   ---------------------------------------------------------------------------------------------
+
    i_keyboard : entity work.keyboard
       port map (
          clk_main_i           => clk_main_i,
-
-         -- Interface to the MEGA65 keyboard
          key_num_i            => kb_key_num_i,
          key_pressed_n_i      => kb_key_pressed_n_i,
-
-         -- @TODO: Create the kind of keyboard output that your core needs
-         -- "example_n_o" is a low active register and used by the demo core:
-         --    bit 0: Space
-         --    bit 1: Return
-         --    bit 2: Run/Stop
-         example_n_o          => keyboard_n
+         membrane_row_i       => membrane_row,
+         membrane_col_o       => membrane_col,
+         fn_keys_o            => fn_keys
       ); -- i_keyboard
 
-end architecture synthesis;
+   ---------------------------------------------------------------------------------------------
+   -- Joysticks: MEGA65 port 1 = ZX Next left joystick, port 2 = right joystick.
+   -- The MEGA65's (single) fire button is fire button 1 ("B"), which is the Kempston fire.
+   ---------------------------------------------------------------------------------------------
 
+   joy_left  <= "0000000" & (not joy_1_fire_n_i) & (not joy_1_up_n_i) & (not joy_1_down_n_i) &
+                            (not joy_1_left_n_i) & (not joy_1_right_n_i);
+   joy_right <= "0000000" & (not joy_2_fire_n_i) & (not joy_2_up_n_i) & (not joy_2_down_n_i) &
+                            (not joy_2_left_n_i) & (not joy_2_right_n_i);
+
+   ---------------------------------------------------------------------------------------------
+   -- Video: RGB333 @ 14 MHz pixel clock, re-timed into the 28 MHz main clock domain.
+   -- CLK_14 and CLK_28 are phase aligned (same MMCM), so this is a synchronous transfer.
+   ---------------------------------------------------------------------------------------------
+
+   clk14_toggle_proc : process (clk_14_i)
+   begin
+      if rising_edge(clk_14_i) then
+         clk14_toggle <= not clk14_toggle;
+      end if;
+   end process clk14_toggle_proc;
+
+   video_proc : process (clk_main_i)
+   begin
+      if rising_edge(clk_main_i) then
+         -- stage 1: sample the CLK_14 domain
+         v_rgb      <= rgb;
+         v_vs_n     <= rgb_vs_n;
+         v_hs_n     <= rgb_hs_n;
+         v_vb_n     <= rgb_vb_n;
+         v_hb_n     <= rgb_hb_n;
+         v_toggle   <= clk14_toggle;
+         v_toggle_d <= v_toggle;
+
+         -- stage 2: output with a clock enable in the first 28 MHz cycle of each 14 MHz pixel
+         video_ce       <= v_toggle xor v_toggle_d;
+         video_red_o    <= expand3(v_rgb(8 downto 6));
+         video_green_o  <= expand3(v_rgb(5 downto 3));
+         video_blue_o   <= expand3(v_rgb(2 downto 0));
+         video_vs_o     <= not v_vs_n;
+         video_hs_o     <= not v_hs_n;
+         video_vblank_o <= not v_vb_n;
+         video_hblank_o <= not v_hb_n;
+      end if;
+   end process video_proc;
+
+   video_ce_o <= video_ce;
+
+   -- The OSM overlay of the analog (VGA) output runs at the post-scandoubler pixel clock:
+   -- 28 MHz with the scandoubler on, 14 MHz with the scandoubler off (retro 15 kHz)
+   video_ce_ovl_o <= '1' when video_scandoubler_i = '1' else video_ce;
+
+   ---------------------------------------------------------------------------------------------
+   -- Audio: 12-bit unsigned -> 16-bit signed with a DC blocker
+   ---------------------------------------------------------------------------------------------
+
+   i_dc_blocker_l : entity work.zxn_dc_blocker
+      port map (
+         clk_i   => clk_main_i,
+         audio_i => audio_l_u,
+         audio_o => audio_left_o
+      );
+
+   i_dc_blocker_r : entity work.zxn_dc_blocker
+      port map (
+         clk_i   => clk_main_i,
+         audio_i => audio_r_u,
+         audio_o => audio_right_o
+      );
+
+   ---------------------------------------------------------------------------------------------
+   -- SD card
+   ---------------------------------------------------------------------------------------------
+
+   sd_cs0_n_o <= sd_cs0_n;
+   sd_cs1_n_o <= sd_cs1_n;
+   sd_sclk_o  <= sd_sclk;
+
+   -- SD card activity (drive led): stays on for ~150 ms after the last clock edge
+   sd_activity_proc : process (clk_main_i)
+   begin
+      if rising_edge(clk_main_i) then
+         sd_sclk_d <= sd_sclk;
+         if sd_act_cnt /= 0 then
+            sd_act_cnt <= sd_act_cnt - 1;
+         end if;
+         if (sd_cs0_n = '0' or sd_cs1_n = '0') and sd_sclk /= sd_sclk_d then
+            sd_act_cnt <= (others => '1');
+         end if;
+      end if;
+   end process sd_activity_proc;
+
+   sd_active_o <= '1' when sd_act_cnt /= 0 else '0';
+
+end architecture synthesis;

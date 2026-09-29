@@ -431,36 +431,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../M2M/vhdl/democore/democore_game.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../M2M/vhdl/democore/vga_controller.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../M2M/vhdl/democore/democore_video.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../M2M/vhdl/democore/democore_audio.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../M2M/vhdl/democore/democore.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../M2M/QNICE/vhdl/fifo.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -637,6 +607,318 @@
       </File>
       <File Path="$PPRDIR/vhdl/keyboard.vhd">
         <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/ym2149.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/turbosound.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/soundrive.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/i2s.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/audio_mixer.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/i2s/i2s_transmit.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/i2s/i2s_slave.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/i2s/i2s_receive.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/audio/i2s/i2s_master.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/cpu/t80n_pack.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/cpu/t80n_alu.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/cpu/t80n_mcode.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/vhdl/zxnext/t80n.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/cpu/t80na.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/multiface.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/dma.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/divmmc.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/copper.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/im2_control.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/im2_device.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/im2_peripheral.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/peripherals.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/ctc_chan.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/ctc.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/input/membrane/membrane.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/input/membrane/membrane_stick.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/misc/debounce.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/video/zxula_timing.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/video/zxula.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/video/tilemap.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/video/sprites.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/video/lores.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/video/layer2.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/serial/uart.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/serial/uart_rx.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/serial/uart_tx.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/serial/spi_master.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/serial/fifop.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/rom/bootrom.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/zxnext.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/vhdl/zxnext/bram_xilinx.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/vhdl/zxnext/zxnext_top_m65.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/vhdl/sdram_zxn.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/vhdl/zxn_dc_blocker.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/mister/rtc.sv">
+        <FileInfo SFType="SVerilog">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>

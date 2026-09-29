@@ -443,7 +443,21 @@ architecture synthesis of mega65_r6 is
    signal qnice_ramrom_we        : std_logic;
    signal qnice_ramrom_wait      : std_logic;
 
+   ---------------------------------------------------------------------------------------------
+   -- SDRAM (used by the ZX Next core)
+   ---------------------------------------------------------------------------------------------
+
+   signal sdram_dq_out           : std_logic_vector(15 downto 0);
+   signal sdram_dq_oe_n          : std_logic_vector(15 downto 0);
+   signal sdram_dq_in            : std_logic_vector(15 downto 0);
+
 begin
+
+   -- Tri-state buffers for the SDRAM data lines
+   sdram_dq_gen : for i in sdram_dq_io'range generate
+      sdram_dq_io(i) <= sdram_dq_out(i) when sdram_dq_oe_n(i) = '0' else 'Z';
+   end generate sdram_dq_gen;
+   sdram_dq_in <= sdram_dq_io;
 
    -- Driver for the audio DAC (AK4432VT).
    i_audio : entity work.audio
@@ -554,17 +568,6 @@ begin
    pmod2_en_o            <= '0';
    qspidb_io             <= (others => 'Z');
    qspicsn_o             <= '1';
-   sdram_clk_o           <= '0';
-   sdram_cke_o           <= '0';
-   sdram_ras_n_o         <= '1';
-   sdram_cas_n_o         <= '1';
-   sdram_we_n_o          <= '1';
-   sdram_cs_n_o          <= '1';
-   sdram_ba_o            <= (others => '0');
-   sdram_a_o             <= (others => '0');
-   sdram_dqml_o          <= '0';
-   sdram_dqmh_o          <= '0';
-   sdram_dq_io           <= (others => 'Z');
 
 
    -----------------------------------------------------------------------------------------
@@ -596,16 +599,17 @@ begin
       kb_io0_o                => kb_io0_o,
       kb_io1_o                => kb_io1_o,
       kb_io2_i                => kb_io2_i,
-      sd_reset_o              => sd_reset_o,
-      sd_clk_o                => sd_clk_o,
-      sd_mosi_o               => sd_mosi_o,
-      sd_miso_i               => sd_miso_i,
-      sd_cd_i                 => sd_cd_i,
-      sd2_reset_o             => sd2_reset_o,
-      sd2_clk_o               => sd2_clk_o,
-      sd2_mosi_o              => sd2_mosi_o,
-      sd2_miso_i              => sd2_miso_i,
-      sd2_cd_i                => sd2_cd_i,
+      -- The ZX Next core owns both SD card slots (see CORE below): QNICE sees two empty slots
+      sd_reset_o              => open,
+      sd_clk_o                => open,
+      sd_mosi_o               => open,
+      sd_miso_i               => '1',
+      sd_cd_i                 => '1',
+      sd2_reset_o             => open,
+      sd2_clk_o               => open,
+      sd2_mosi_o              => open,
+      sd2_miso_i              => '1',
+      sd2_cd_i                => '1',
       joy_1_up_n_i            => fa_up_n_i,
       joy_1_down_n_i          => fa_down_n_i,
       joy_1_left_n_i          => fa_left_n_i,
@@ -762,7 +766,7 @@ begin
          clk_i                   => clk_i,
 
          -- Share clock and reset with the framework
-         main_clk_o              => main_clk,            -- CORE's 54 MHz clock
+         main_clk_o              => main_clk,            -- CORE's 28 MHz clock
          main_rst_o              => main_rst,            -- CORE's reset, synchronized
 
          --------------------------------------------------------------------------------------------------------
@@ -961,7 +965,38 @@ begin
          --
          cart_addr_oe_o          => cart_addr_oe, -- 0 : tristate (i.e. input), 1 : output
          cart_a_i                => cart_a_in,
-         cart_a_o                => cart_a_out
+         cart_a_o                => cart_a_out,
+
+         --------------------------------------------------------------------
+         -- ZX Next specific board I/O
+         --------------------------------------------------------------------
+
+         -- SD cards: back slot (sd_*) and bottom tray (sd2_*)
+         sd_reset_o              => sd_reset_o,
+         sd_clk_o                => sd_clk_o,
+         sd_mosi_o               => sd_mosi_o,
+         sd_miso_i               => sd_miso_i,
+         sd_cd_i                 => sd_cd_i,
+         sd2_reset_o             => sd2_reset_o,
+         sd2_clk_o               => sd2_clk_o,
+         sd2_mosi_o              => sd2_mosi_o,
+         sd2_miso_i              => sd2_miso_i,
+         sd2_cd_i                => sd2_cd_i,
+
+         -- SDRAM
+         sdram_clk_o             => sdram_clk_o,
+         sdram_cke_o             => sdram_cke_o,
+         sdram_ras_n_o           => sdram_ras_n_o,
+         sdram_cas_n_o           => sdram_cas_n_o,
+         sdram_we_n_o            => sdram_we_n_o,
+         sdram_cs_n_o            => sdram_cs_n_o,
+         sdram_ba_o              => sdram_ba_o,
+         sdram_a_o               => sdram_a_o,
+         sdram_dqml_o            => sdram_dqml_o,
+         sdram_dqmh_o            => sdram_dqmh_o,
+         sdram_dq_out_o          => sdram_dq_out,
+         sdram_dq_oe_n_o         => sdram_dq_oe_n,
+         sdram_dq_in_i           => sdram_dq_in
       ); -- CORE
 
 end architecture synthesis;

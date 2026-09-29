@@ -1,42 +1,71 @@
 ---------------------------------------------------------------------------------------------------------
--- MiSTer2MEGA65 Framework  
+-- ZX Spectrum Next for MEGA65 (MegaZXNext)
 --
--- Custom keyboard controller for your core
+-- MEGA65 keyboard to ZX Next membrane matrix
 --
 -- Runs in the clock domain of the core.
 --
--- This is how MiSTer2MEGA65 provides access to the MEGA65 keyboard: 
+-- M2M provides kb_key_num_i, which runs through the key numbers 0 to 79 with a frequency of 1 kHz,
+-- and kb_key_pressed_n_i, which is debounced and low active.
 --
--- Each core is treating the keyboard in a different way: Some need low-active "matrices", some
--- might need small high-active keyboard memories, etc. This is why the MiSTer2MEGA65 framework
--- lets you define literally everything and only provides a minimal abstraction layer to the keyboard.
--- You need to adjust this module to your needs.
+-- The ZX Next membrane is an 8 x 7 matrix. Columns 0-4 are the classic ZX Spectrum keys; columns 5
+-- and 6 contain the extra keys of the ZX Next keyboard (see ZXNext_MiSTer/rtl/input/membrane/membrane.vhd):
 --
--- MiSTer2MEGA65 provides a very simple and generic interface to the MEGA65 keyboard:
--- kb_key_num_i is running through the key numbers 0 to 79 with a frequency of 1 kHz, i.e. the whole
--- keyboard is scanned 1000 times per second. kb_key_pressed_n_i is already debounced and signals
--- low active, if a certain key is being pressed right now.
--- 
--- MiSTer2MEGA65 done by sy2002 and MJoergen in 2022 and licensed under GPL v3
+--       col  0    1    2    3    4     5          6
+--       row ------------------------------------------
+--        0 | CAPS Z    X    C    V   EXTEND      UP
+--        1 | A    S    D    F    G  CAPS LOCK   GRAPH
+--        2 | Q    W    E    R    T  TRUE VID   INV VID
+--        3 | 1    2    3    4    5   BREAK      EDIT
+--        4 | 0    9    8    7    6     ;          "
+--        5 | P    O    I    U    Y     ,          .
+--        6 | RET  L    K    J    H   DELETE     RIGHT
+--        7 | SPC  SYM  M    N    B    LEFT      DOWN
+--
+-- MEGA65 key            ZX Next
+-- -------------------------------------------------------
+-- Left/Right Shift      CAPS SHIFT
+-- Ctrl, MEGA            SYMBOL SHIFT
+-- Alt                   EXTEND MODE
+-- Caps Lock             CAPS LOCK
+-- No Scroll             GRAPH
+-- Tab                   TRUE VIDEO
+-- Clr/Home              INV VIDEO
+-- Esc, Run/Stop         BREAK
+-- <- (left of 1)        EDIT
+-- Inst/Del              DELETE
+-- Cursor keys           Cursor keys
+-- ; , .                 ; , .
+-- : + - * / = @ £ ^     SYMBOL SHIFT + Z K J B V L 2 X H
+--
+-- F3                    50 Hz / 60 Hz toggle     (ZX Next F3)
+-- F9                    Multiface NMI            (ZX Next F9)
+-- F11                   DivMMC NMI (drive btn)   (ZX Next F10)
+-- F13                   Cycle CPU speed          (ZX Next F8)
+--
+-- MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
 ---------------------------------------------------------------------------------------------------------
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 entity keyboard is
    port (
-      clk_main_i           : in std_logic;               -- core clock
-         
+      clk_main_i           : in  std_logic;               -- core clock
+
       -- Interface to the MEGA65 keyboard
-      key_num_i            : in integer range 0 to 79;   -- cycles through all MEGA65 keys
-      key_pressed_n_i      : in std_logic;               -- low active: debounced feedback: is kb_key_num_i pressed right now?
-               
-      -- @TODO: Create the kind of keyboard output that your core needs
-      -- "example_n_o" is a low active register and used by the demo core
-      example_n_o          : out std_logic_vector(79 downto 0)
+      key_num_i            : in  integer range 0 to 79;   -- cycles through all MEGA65 keys
+      key_pressed_n_i      : in  std_logic;               -- low active: debounced feedback: is kb_key_num_i pressed right now?
+
+      -- ZX Next membrane: row selected by the membrane scanner, low active columns
+      membrane_row_i       : in  std_logic_vector(2 downto 0);
+      membrane_col_o       : out std_logic_vector(6 downto 0);
+
+      -- ZX Next special function keys F1 .. F10, high active
+      fn_keys_o            : out std_logic_vector(10 downto 1)
    );
-end keyboard;
+end entity keyboard;
 
 architecture beh of keyboard is
 
@@ -83,7 +112,7 @@ constant m65_k             : integer := 37;
 constant m65_o             : integer := 38;
 constant m65_n             : integer := 39;
 constant m65_plus          : integer := 40;
-constant m65_p             : integer := 41; 
+constant m65_p             : integer := 41;
 constant m65_l             : integer := 42;
 constant m65_minus         : integer := 43;
 constant m65_dot           : integer := 44;
@@ -119,17 +148,122 @@ constant m65_up_crsr       : integer := 73;  -- cursor up
 constant m65_left_crsr     : integer := 74;  -- cursor left
 constant m65_restore       : integer := 75;
 
-signal key_pressed_n : std_logic_vector(79 downto 0);
+signal key_pressed_n : std_logic_vector(79 downto 0) := (others => '1');
+
+type matrix_t is array (0 to 7) of std_logic_vector(6 downto 0);
+signal matrix        : matrix_t;             -- low active
 
 begin
 
-   example_n_o <= key_pressed_n;
-   
    keyboard_state : process(clk_main_i)
    begin
       if rising_edge(clk_main_i) then
          key_pressed_n(key_num_i) <= key_pressed_n_i;
       end if;
-   end process;
+   end process keyboard_state;
 
-end beh;
+   -- Build the ZX Next matrix (low active) from the MEGA65 key states (low active)
+   build_matrix : process(all)
+      variable k      : std_logic_vector(79 downto 0);   -- high active
+      variable m      : matrix_t;                        -- high active
+      variable symbol : std_logic;
+   begin
+      k := not key_pressed_n;
+      m := (others => (others => '0'));
+
+      -- symbols that need SYMBOL SHIFT + key on the ZX Spectrum
+      symbol := k(m65_colon) or k(m65_plus) or k(m65_minus) or k(m65_asterisk) or k(m65_slash) or
+                k(m65_equal) or k(m65_at)   or k(m65_gbp)   or k(m65_arrow_up);
+
+      -- row 0: CAPS Z X C V | EXTEND UP
+      m(0)(0) := k(m65_left_shift) or k(m65_right_shift);
+      m(0)(1) := k(m65_z) or k(m65_colon);
+      m(0)(2) := k(m65_x) or k(m65_gbp);
+      m(0)(3) := k(m65_c);
+      m(0)(4) := k(m65_v) or k(m65_slash);
+      m(0)(5) := k(m65_alt);
+      m(0)(6) := k(m65_up_crsr);
+
+      -- row 1: A S D F G | CAPS LOCK GRAPH
+      m(1)(0) := k(m65_a);
+      m(1)(1) := k(m65_s);
+      m(1)(2) := k(m65_d);
+      m(1)(3) := k(m65_f);
+      m(1)(4) := k(m65_g);
+      m(1)(5) := k(m65_capslock);
+      m(1)(6) := k(m65_no_scrl);
+
+      -- row 2: Q W E R T | TRUE VIDEO INV VIDEO
+      m(2)(0) := k(m65_q);
+      m(2)(1) := k(m65_w);
+      m(2)(2) := k(m65_e);
+      m(2)(3) := k(m65_r);
+      m(2)(4) := k(m65_t);
+      m(2)(5) := k(m65_tab);
+      m(2)(6) := k(m65_clr_home);
+
+      -- row 3: 1 2 3 4 5 | BREAK EDIT
+      m(3)(0) := k(m65_1);
+      m(3)(1) := k(m65_2) or k(m65_at);
+      m(3)(2) := k(m65_3);
+      m(3)(3) := k(m65_4);
+      m(3)(4) := k(m65_5);
+      m(3)(5) := k(m65_esc) or k(m65_run_stop);
+      m(3)(6) := k(m65_arrow_left);
+
+      -- row 4: 0 9 8 7 6 | ; "
+      m(4)(0) := k(m65_0);
+      m(4)(1) := k(m65_9);
+      m(4)(2) := k(m65_8);
+      m(4)(3) := k(m65_7);
+      m(4)(4) := k(m65_6);
+      m(4)(5) := k(m65_semicolon);
+      m(4)(6) := '0';
+
+      -- row 5: P O I U Y | , .
+      m(5)(0) := k(m65_p);
+      m(5)(1) := k(m65_o);
+      m(5)(2) := k(m65_i);
+      m(5)(3) := k(m65_u);
+      m(5)(4) := k(m65_y);
+      m(5)(5) := k(m65_comma);
+      m(5)(6) := k(m65_dot);
+
+      -- row 6: ENTER L K J H | DELETE RIGHT
+      m(6)(0) := k(m65_return);
+      m(6)(1) := k(m65_l) or k(m65_equal);
+      m(6)(2) := k(m65_k) or k(m65_plus);
+      m(6)(3) := k(m65_j) or k(m65_minus);
+      m(6)(4) := k(m65_h) or k(m65_arrow_up);
+      m(6)(5) := k(m65_ins_del);
+      m(6)(6) := k(m65_horz_crsr);
+
+      -- row 7: SPACE SYM M N B | LEFT DOWN
+      m(7)(0) := k(m65_space);
+      m(7)(1) := k(m65_ctrl) or k(m65_mega) or symbol;
+      m(7)(2) := k(m65_m);
+      m(7)(3) := k(m65_n);
+      m(7)(4) := k(m65_b) or k(m65_asterisk);
+      m(7)(5) := k(m65_left_crsr);
+      m(7)(6) := k(m65_vert_crsr);
+
+      for r in 0 to 7 loop
+         matrix(r) <= not m(r);
+      end loop;
+   end process build_matrix;
+
+   membrane_col_o <= matrix(to_integer(unsigned(membrane_row_i)));
+
+   -- ZX Next special keys (high active)
+   fn_keys_o(1)  <= '0';                              -- hard reset: use the MEGA65 reset button
+   fn_keys_o(2)  <= '0';
+   fn_keys_o(3)  <= not key_pressed_n(m65_f3);        -- 50 Hz / 60 Hz
+   fn_keys_o(4)  <= '0';                              -- soft reset: use the MEGA65 reset button
+   fn_keys_o(5)  <= '0';
+   fn_keys_o(6)  <= '0';
+   fn_keys_o(7)  <= '0';
+   fn_keys_o(8)  <= not key_pressed_n(m65_f13);       -- cpu speed
+   fn_keys_o(9)  <= not key_pressed_n(m65_f9);        -- multiface nmi
+   fn_keys_o(10) <= not key_pressed_n(m65_f11);       -- divmmc nmi
+
+end architecture beh;
