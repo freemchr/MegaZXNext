@@ -31,20 +31,20 @@ Gaps (most severe first)
      misbehaves only at some speeds.
 3. **SDRAM I/O has no input/output delays.** IOB packing makes the timing deterministic, but run
    `check_timing` and confirm there are no unconstrained-I/O warnings (guide 4.2.4, l.4208).
-4. **R3 builds a core that cannot work.**
+4. **[FIXED: `mega65.vhd` now fails elaboration on R3]** **R3 builds a core that cannot work.**
    - `top_mega65-r3.vhd` is stock, so on R3 the core's SD and SDRAM inputs take their port
      defaults (no card, RAM reads 0).
    - `CORE.xdc:45-46` matches nothing on R3 (critical warnings; guide 4.2.2, l.4160).
    - Nothing checks `G_BOARD`, yet `CORE-R3.xpr` is maintained and the commit message lists R3.
      The help text already says R4–R6 only.
    - **Fix:** drop `CORE-R3.xpr`, or add an `assert G_BOARD /= "MEGA65_R3" severity failure`.
-5. **Help and welcome text is wider than the frame.** *Verified.*
+5. **[FIXED: lines reflowed to at most 43 characters]** **Help and welcome text is wider than the frame.** *Verified.*
    - The OSM is 720/16 = 45 columns and the frame takes 2, so at most 43 characters fit.
    - Too-long lines: `config.vhd:86` (44), `:87` (44), `:98` (45), `:106` (46), `:109` (44).
 
 ### B. Correctness
 
-6. **Audio filter coefficient `audio_cx1 = 2`** (`globals.vhd:166`). *Verified.* The core's
+6. **[FIXED: now 3, all coefficients match `sys_top.v`]** **Audio filter coefficient `audio_cx1 = 2`** (`globals.vhd:166`). *Verified.* The core's
    `sys/sys_top.v:342` has `acx1 = 3`. This is the known template typo (guide S84, l.1552).
    One-line fix.
 7. **Audio level / DC blocker** (`zxn_dc_blocker.vhd:39-46`).
@@ -123,7 +123,7 @@ Passes
 Suggested order
 ---------------
 
-1. Before hardware bring-up: 6 (one line), 1, 3, then 5.
+1. Before hardware bring-up: 1 and 3 (4, 5 and 6 are fixed).
 2. Bring-up on R6, with the CPU at all four speeds and Layer 2 320×256/640×256 (exercises
    SDRAM Port B).
 3. Then: 4, 8, and the documentation items 10–16.

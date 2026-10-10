@@ -30,8 +30,9 @@ on the task, not on rediscovering the layout.
 ### Target boards
 
 The ZX Next's 2 MB of RAM live in the MEGA65's **SDRAM**, which only exists on **R4, R5, R6**.
-`CORE/CORE-R3.xpr` exists and elaborates (the R3 top file is stock M2M), but on R3 the core has
-no RAM and no SD card — **R3 is not a supported target**. The help screen says "Requires a
+`CORE/CORE-R3.xpr` exists, but the R3 top file is stock M2M and R3 has no SDRAM, so the core
+would have no RAM and no SD card. An `assert` in `mega65.vhd` makes the R3 build fail on purpose:
+**R3 is not a supported target**. The help screen says "Requires a
 MEGA65 R4, R5 or R6".
 
 ---
@@ -244,8 +245,8 @@ can't run synthesis, say so; don't claim timing results.
 ## 8. Open items
 
 The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. Highest
-priority: the audio coefficient typo (`audio_cx1`), the SDRAM multicycle review, and then
-hardware bring-up on R6. Release hygiene that is still on the template:
+priority: the SDRAM multicycle review and the SDRAM I/O constraints (audit items 1 and 3),
+then hardware bring-up on R6. Release hygiene that is still on the template:
 `README.md`, `AUTHORS`, `VERSIONS.md`, `doc/m2m/exceptions.md`, the `CORE/m2m-rom/m2m-rom.asm`
 header, and "Version [WIP]" in the welcome screen.
 

@@ -83,9 +83,10 @@ constant SCR_WELCOME : string :=
    "Powered by MiSTer2MEGA65 Version [WIP],\n" &
    "done by sy2002 and MJoergen in 2022\n\n" &
    "The ZX Next boots from the SD card: Put a\n" &
-   "ZX Next distribution (tbblue.fw, TBBLUE.TBU,\n" &
-   "machines/, nextzxos/, ...) onto a FAT32 card\n" &
-   "in the back slot or in the bottom tray.\n\n" &
+   "ZX Next distribution (tbblue.fw,\n" &
+   "TBBLUE.TBU, machines/, nextzxos/, ...)\n" &
+   "onto a FAT32 card in the back slot or in\n" &
+   "the bottom tray.\n\n" &
    "    MEGA65 key        ZX Next\n" &
    "    " & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_5 & "\n" &
    "    Shift             Caps Shift\n" &
@@ -95,7 +96,7 @@ constant SCR_WELCOME : string :=
    "    F9 / F11          NMI / Drive button\n" &
    "    F13               CPU speed\n" &
    "    Help              Options menu\n\n" &
-   "Reset button: short = soft, long = hard reset\n\n" &
+   "Reset button: short = soft, long = hard\n\n" &
    "\n    Press Space to continue.\n";
 
 constant HELP_1 : string :=
@@ -103,11 +104,12 @@ constant HELP_1 : string :=
    " Port of ZXNext_MISTer (Alvin Albrecht,\n" &
    " Victor Trucco, Fabio Belavenuto, Sorgelig)\n" &
    " Powered by MiSTer2MEGA65\n\n" &
-   " Requires a MEGA65 R4, R5 or R6: the ZX Next's\n" &
-   " 2 MB of RAM live in the SDRAM.\n\n" &
-   " SD cards: The card in the back slot is the\n" &
-   " ZX Next's boot card (SD0). If the back slot\n" &
-   " is empty, the bottom tray card is used.\n\n" &
+   " Requires a MEGA65 R4, R5 or R6: the\n" &
+   " ZX Next's 2 MB of RAM live in the SDRAM.\n\n" &
+   " SD cards: The card in the back slot is\n" &
+   " the ZX Next's boot card (SD0). If the\n" &
+   " back slot is empty, the bottom tray card\n" &
+   " is used.\n\n" &
    " Cursor right to learn more.       (1 of 2)\n" &
    " Press Space to close the help screen.";
 

@@ -305,6 +305,12 @@ signal main_sd_cd_back        : std_logic_vector(1 downto 0) := "11";
 
 begin
 
+   -- The ZX Next's RAM lives in the SDRAM and the core owns the SD card slots: only the R4, R5 and R6
+   -- board top files (M2M/vhdl/top_mega65-r4/5/6.vhd) wire them to the core. R3 has no SDRAM.
+   assert G_BOARD /= "MEGA65_R3"
+      report "The ZX Spectrum Next core needs a MEGA65 R4, R5 or R6: R3 has no SDRAM"
+      severity failure;
+
    hr_core_write_o      <= '0';
    hr_core_read_o       <= '0';
    hr_core_address_o    <= (others => '0');
