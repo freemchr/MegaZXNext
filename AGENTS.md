@@ -202,8 +202,32 @@ git submodule update --init                 # CORE/ZXNext_MiSTer and M2M/QNICE
 # .cor:   bit2core / coretool (see the M2M wiki release page)
 ```
 
-Vivado is not on the PATH in every environment (the author builds on a separate host). If you
-can't run synthesis, say so; don't claim timing results.
+Vivado 2026.1 lives in `~/Xilinx/2026.1` (`source ~/Xilinx/2026.1/Vivado/settings64.sh`); it is
+not on the PATH by default. On Ubuntu 26.04 Vivado needs `libncurses.so.5`, which the OS no longer
+ships: point `LD_LIBRARY_PATH` at a private directory with a symlink
+`libncurses.so.5 -> /usr/lib/x86_64-linux-gnu/libncursesw.so.6` instead of changing the system.
+
+Batch build (headless, same `.xpr`):
+
+```tcl
+open_project CORE/CORE-R6.xpr
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 8
+wait_on_run impl_1
+open_run impl_1
+report_timing_summary -file timing_summary.rpt
+check_timing -verbose -file check_timing.rpt
+```
+
+- Run long builds detached (`setsid nohup ...`). Other agent sessions on the same machine build
+  other cores with Vivado; never `pkill`/`pgrep -f vivado` (it hits their builds, and theirs hit
+  yours). Kill only by the PID you started.
+- **Vivado rewrites the `.xpr` files** when it opens them (format, absolute paths). After a build,
+  `git checkout -- CORE/*.xpr` unless you intended a file-list change.
+- `runme.log` is appended across runs: read only from the last "Start of session".
+- After every build check: WNS and WHS >= 0, no critical warnings, no block RAM demoted to LUTRAM
+  (Synth 8-5835). Known and fine: `t80n.vhd` `RegsH`/`RegsL` implemented in registers (8-4767).
+- If you can't run synthesis, say so; don't claim timing results.
 
 **Test on hardware with:** a FAT32 SD card that holds a ZX Next distribution (`TBBLUE.FW`,
 `TBBLUE.TBU`, `machines/`, `nextzxos/`, …) in the back slot or the bottom tray.
@@ -239,6 +263,12 @@ can't run synthesis, say so; don't claim timing results.
 - QNICE has no SD card (§3.3). Anything in the Shell that needs files will fail.
 - The XDC uses hierarchical names; instance renames drop constraints silently.
 - `doc/temp/*` are upstream M2M scratch notes, not documentation of this core.
+- **HDMI "Zoom-in" uses M2M's `crop.vhd`, which is hard-coded for the C64 (320x200 picture
+  behind 33/35 pixel borders).** On the ZX Next's 720-pixel raster it crops the wrong window.
+  Either crop in the core or remove the menu item.
+- Vivado 2026.1 has mis-synthesized VHDL procedures that write process variables implicitly (seen
+  in another port). Pass variables as explicit `inout` parameters; if hardware and simulation
+  disagree, suspect synthesis.
 
 ---
 
@@ -250,7 +280,25 @@ then hardware bring-up on R6. Release hygiene that is still on the template:
 `README.md`, `AUTHORS`, `VERSIONS.md`, `doc/m2m/exceptions.md`, the `CORE/m2m-rom/m2m-rom.asm`
 header, and "Version [WIP]" in the welcome screen.
 
-## 9. Pointers
+## 9. Lessons from other M2M ports
+
+`/home/freemchr/github/m2m-porting-lessons/README.md`
+(https://github.com/freemchr/m2m-porting-lessons) collects what earlier ports (MegaST) learnt the
+hard way: memory latency budgets, M2M V2.0.1 bugs, resets, Vivado and QNICE pitfalls, MEGA65
+hardware facts, verification and release practice. Read it before porting work or when debugging
+framework, Vivado or hardware problems. Where it applies here:
+
+- OSM size: this core's OSM is 720x576 with a 16x16 font, i.e. 45x36 characters. Inside the frame
+  a help line can be at most 43 characters (MegaST's 640x400 limits do not apply).
+- Resets: `main_reset_m2m_i`/`main_reset_core_i` also carry the QNICE CSR reset (lessons §3.4).
+- Board tops: R3 differs from R4-R6; the R3 build is blocked on purpose (§1).
+- Release: no ROMs are shipped (the user supplies the ZX Next distribution on the SD card); no
+  settings file is needed (`SAVE_SETTINGS = false`). Use `bit2core` from mega65-tools, not the 4 MB
+  capped copy in M2M. Never call a board "working" before a tester with that board confirmed it.
+- Hardware debugging: TE0790 JTAG under WSL (`usbipd attach --wsl`), BSCANE2 probes instead of ILA
+  (free licence), load test bitstreams over JTAG.
+
+## 10. Pointers
 
 - M2M framework + agent guide: https://github.com/sy2002/MiSTer2MEGA65 (develop: `AGENTS.md`)
 - Porting guide: https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide

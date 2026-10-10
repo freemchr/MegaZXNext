@@ -12,6 +12,13 @@ Gaps (most severe first)
 
 ### A. Likely to break on hardware or in timing
 
+**R6 build of `cd09f1c` (Vivado 2026.1, 2026-10-11):** all constraints met, WNS +0.124 ns (inside
+`cpu_clk_28`, rise→fall half-cycle paths of the Z80N at 28 MHz), WHS +0.021 ns (M2M HyperRAM
+`hr_rwds` input). No critical warnings; no block RAM demoted to LUTRAM; `t80n` `RegsH`/`RegsL` in
+registers (expected). `check_timing`: 41 inputs / 85 outputs without I/O delays (all board I/O,
+including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins from
+`nr_a2_pi_i2s_ctl_reg[6]` (Pi I²S clock select, unused on the MEGA65).
+
 1. **SDRAM multicycle exceptions vs. `sdram_zxn` input registers** (`CORE/CORE.xdc:37-40`,
    `CORE/vhdl/sdram_zxn.vhd:241-245`). *Verified.*
    - The XDC copies MiSTer's `ZXNext.sdc` 2-cycle setup multicycle from the CPU clocks to
@@ -19,8 +26,18 @@ Gaps (most severe first)
    - But `sdram_zxn` registers `ram_a_addr/req/rd_n/di` on **every** 112 MHz edge and acts
      on the registered values one edge later. With the multicycle, the edge+1 capture is
      not timed, so `a_req_r` may see the new request while `a_addr_r` is still settling.
-   - The original `sdram.sv` sampled differently, so the exception must be re-derived for the
-     new controller (guide 3.B.5, l.2583). Either drop the CPU→`sdram_clk` multicycle and close
+   - **Measured on the R6 build:** CPU → `a_req_r` datapath 12.49 ns (16 logic levels from
+     `z80n/IR_reg` through the memory decode), CPU → `a_addr_r[13..20]` 10.0–11.9 ns (through the
+     MMU). One 112 MHz cycle is 8.93 ns. The edge+1 capture therefore *does* see unsettled values
+     in this placement, and `old_a_req = '0' and a_req_r = '1'` can start an access from a glitch,
+     or with a half-settled address (a write to the wrong address corrupts RAM). The paths pass
+     STA only because of the 2-cycle exception (slack 1.54 ns from `cpu_clk_div`, 4.74 ns from
+     `cpu_clk_28`).
+   - MiSTer's `sdram.sv` samples `old_req` on every edge too, so this is inherited, but the
+     exception must be re-derived for this controller (guide 3.B.5, l.2583).
+   - The reverse direction (`ram_a_wait`/`ram_a_do` → CPU, `-start -setup 2`) assumes the
+     result is launched no later than edge +2: the worst `ram_a_wait` path is 10.75 ns, so
+     simply sampling the inputs one edge later would break that side. Either drop the CPU→`sdram_clk` multicycle and close
      timing at 8.9 ns, or delay the request edge detection until the window the exception
      allows. The GHDL testbench cannot catch this (no timing).
 2. **Register-driven CPU clock** (`zxnext_top_m65.vhd:215-252`, `CORE.xdc:26-32`).
