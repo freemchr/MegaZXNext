@@ -118,8 +118,12 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SD + SDRAM routed t
   IOB-registered outputs and DQ input, SDRAM clock = inverted controller clock via ODDR
   (MJoergen's proven MEGA65 I/O scheme). Port A (CPU/DMA) has a wait signal. Port B (Layer 2
   fetch) has **no wait**: the controller learns the Layer 2 request phase and keeps the two
-  cycles before it free. CPU writes invalidate a matching Port B cache line. Port A inputs are
-  registered once (the ZX Next memory decode is combinational).
+  cycles before it free. CPU writes invalidate a matching Port B cache line.
+- **Port A is a 56 MHz interface:** it is evaluated, and `ram_a_wait`/`ram_a_do` change, only on
+  the 112 MHz edges that coincide with an edge of CLK_28 (`clk_28_i` is the phase reference).
+  The inputs come from the ZX Next's combinational memory decode, launched by either CLK_28/CPU
+  edge, and are garbage for up to 2 cycles in between. This is what the CPU↔`sdram_clk`
+  multicycles in `CORE.xdc` assume; keep the two in sync.
 - DQ is split into `dq_out`/`dq_oe_n`/`dq_in`. The tri-states are in the patched board tops.
 - **Simulate before touching it:** `cd CORE/sim && make` (GHDL, `--std=08`). The testbench uses
   MJoergen's SDRAM model and checks with `--assert-level=error`.
@@ -254,10 +258,13 @@ check_timing -verbose -file check_timing.rpt
   clock names/pins and the multicycles assume 112 = 4 × 28 MHz).
 - `sdram_zxn` assumes its clock is exactly 4× and phase aligned with `CLK_28`; Layer 2 timing
   depends on that.
-- The CPU→`sdram_clk` multicycles in `CORE.xdc` come from MiSTer's `ZXNext.sdc`, which was
-  written for the original `sdram.sv`. `sdram_zxn` registers its Port A inputs on every edge,
-  so these exceptions still have to be re-derived (audit item 1). Don't add more multicycles
-  without proving the capture register really waits that long.
+- The CPU↔`sdram_clk` multicycles in `CORE.xdc` (2 cycles each way, from MiSTer's `ZXNext.sdc`)
+  and the `main_clk`→Port A multicycle are only correct because Port A samples and updates on
+  even edges only (§3.2). Anything in `sdram_zxn` that reads `ram_a_*_i` or drives `ram_a_*_o`
+  on another edge breaks them silently: STA still passes. The testbench catches it (garbage
+  inputs, odd-edge output check). Renaming the Port A registers drops the `main_clk` multicycle
+  (it filters by cell name). Don't add more multicycles without proving the capture register
+  really waits that long.
 - `C_MENU_*` ↔ menu line coupling (§3.5). The main menu already uses all 13 lines of
   `OPTM_DY`; on M2M V2.1.0 an oversized menu is a fatal Shell error.
 - QNICE has no SD card (§3.3). Anything in the Shell that needs files will fail.
@@ -275,8 +282,7 @@ check_timing -verbose -file check_timing.rpt
 ## 8. Open items
 
 The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. Highest
-priority: the SDRAM multicycle review and the SDRAM I/O constraints (audit items 1 and 3),
-then hardware bring-up on R6. Release hygiene that is still on the template:
+priority: the SDRAM I/O constraints (audit item 3), then hardware bring-up on R6. Release hygiene that is still on the template:
 `README.md`, `AUTHORS`, `VERSIONS.md`, `doc/m2m/exceptions.md`, the `CORE/m2m-rom/m2m-rom.asm`
 header, and "Version [WIP]" in the welcome screen.
 

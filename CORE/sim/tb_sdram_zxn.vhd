@@ -9,9 +9,18 @@
 -- C_T_OUT (IOB clock-to-pad) and the read data by C_T_IN (pad-to-IOB).
 --
 -- The testbench drives the ZX Next's two memory ports like zxnext.vhd does:
---    Port A (CPU):     level request in the 28 MHz domain, wait handshake
+--    Port A (CPU):     request pulse in the 28 MHz domain, wait handshake
 --    Port B (Layer 2): toggle request, no handshake
 -- and checks all data against a reference memory.
+--
+-- Port A models the timing that CORE.xdc allows (2 cycles of the 112 MHz clock in both
+-- directions):
+--    * The ZX Next launches a request on a rising or a falling edge of CLK_28. Until the
+--      inputs have settled (at most 2 cycles later) they carry garbage: a request glitch
+--      and a write to an address that is checked later. Some cycles settle to "no request".
+--    * The request is a pulse that ends after the next rising edge of CLK_28 (sram_req_t).
+--    * The CPU sees ram_a_wait / ram_a_do 2 cycles after they changed, on each edge of
+--      CLK_28; they must therefore only change on those edges (checked).
 --
 -- Run: see Makefile in this directory
 --
@@ -33,6 +42,8 @@ architecture sim of tb_sdram_zxn is
 
    constant C_T112     : time := 8929 ps;             -- 112 MHz
    constant C_NUM_RAND : natural := 400;
+   constant C_T_HOLD   : time := 800 ps;              -- min. delay ZX Next -> port A inputs
+   constant C_T_PATH   : time := 2 * C_T112 - 100 ps; -- max. delay port A outputs -> CPU
 
    signal clk112       : std_logic := '0';
    signal clk28        : std_logic := '0';
@@ -46,6 +57,8 @@ architecture sim of tb_sdram_zxn is
    signal a_di         : std_logic_vector(7 downto 0) := (others => '0');
    signal a_do         : std_logic_vector(7 downto 0);
    signal a_wait       : std_logic;
+   signal a_do_cpu     : std_logic_vector(7 downto 0);  -- as seen by the CPU
+   signal a_wait_cpu   : std_logic;
    signal b_addr       : std_logic_vector(20 downto 0) := (others => '0');
    signal b_req        : std_logic := '0';
    signal b_do         : std_logic_vector(7 downto 0);
@@ -122,6 +135,7 @@ begin
       port map (
          clk_i           => clk112,
          rst_i           => rst112,
+         clk_28_i        => clk28,
          ram_a_addr_i    => a_addr,
          ram_a_req_i     => a_req,
          ram_a_rd_n_i    => a_rd_n,
@@ -145,6 +159,21 @@ begin
          sdram_dq_oe_n_o => f_dq_oe_n,
          sdram_dq_in_i   => f_dq_in
       );
+
+   ---------------------------------------------------------------------------------------
+   -- Port A outputs: path delay to the CPU; they may only change on an edge of CLK_28
+   ---------------------------------------------------------------------------------------
+
+   a_wait_cpu <= transport a_wait after C_T_PATH;
+   a_do_cpu   <= transport a_do   after C_T_PATH;
+
+   a_out_check : process (a_wait, a_do)
+   begin
+      if now > 1 us then
+         assert clk28'last_event = 0 ns
+            report "Port A output changed on a 112 MHz edge without a CLK_28 edge" severity error;
+      end if;
+   end process a_out_check;
 
    ---------------------------------------------------------------------------------------
    -- Board: I/O delays and tri-state bus
@@ -201,7 +230,7 @@ begin
       variable rdata   : std_logic_vector(7 downto 0);
       variable t0      : time;
       type addr_list_t is array (0 to C_NUM_RAND - 1) of std_logic_vector(20 downto 0);
-      variable alist   : addr_list_t;
+      variable alist   : addr_list_t := (others => (others => '0'));
       variable errs    : natural := 0;
       variable cpu_n   : natural := 0;
 
@@ -211,20 +240,47 @@ begin
          return lfsr;
       end function rnd;
 
+      -- Start a bus cycle on a rising or a falling edge of CLK_28. Until the inputs settle they
+      -- show a request and a write of random data to an address that is checked later.
+      procedure a_launch(constant ad : in std_logic_vector(20 downto 0); constant rd_n : in std_logic;
+                         constant wd : in std_logic_vector(7 downto 0); constant req : in std_logic) is
+         variable t_end : time;
+         variable t_set : time;
+      begin
+         if rnd(0) = '1' then
+            wait until falling_edge(clk28);
+            t_end := 2 * C_T112 + C_T_HOLD;
+         else
+            wait until rising_edge(clk28);
+            t_end := 4 * C_T112 + C_T_HOLD;
+         end if;
+         -- settle between C_T_HOLD and 2 cycles minus 1.9 ns
+         t_set := C_T_HOLD + 100 ps + (to_integer(rnd(9 downto 0)) mod 150) * 100 ps;
+         a_addr <= transport alist(to_integer(rnd(15 downto 0)) mod C_NUM_RAND) after C_T_HOLD, ad after t_set;
+         a_rd_n <= transport '1' after C_T_HOLD, rd_n after t_set;
+         a_di   <= transport std_logic_vector(rnd(7 downto 0)) after C_T_HOLD, wd after t_set;
+         if req = '1' then
+            a_req <= transport '1' after C_T_HOLD, '0' after t_end;
+         else
+            a_req <= transport '1' after C_T_HOLD, '0' after t_set;
+         end if;
+      end procedure a_launch;
+
       procedure a_access(constant ad : in std_logic_vector(20 downto 0); constant rd_n : in std_logic;
                          constant wd : in std_logic_vector(7 downto 0); variable rd : out std_logic_vector(7 downto 0)) is
       begin
-         wait until rising_edge(clk28);
-         a_addr <= ad;
-         a_rd_n <= rd_n;
-         a_di   <= wd;
-         a_req  <= '1';
-         wait until rising_edge(clk28);
-         while a_wait = '1' loop
-            wait until rising_edge(clk28);
+         -- sometimes a bus cycle without a memory request first
+         if rnd(1 downto 0) = "00" then
+            a_launch(ad, rd_n, wd, '0');
+         end if;
+         a_launch(ad, rd_n, wd, '1');
+         -- the CPU samples wait (and data) on each edge of CLK_28, starting one cycle after the launch
+         wait on clk28;
+         wait on clk28;
+         while a_wait_cpu = '1' loop
+            wait on clk28;
          end loop;
-         rd    := a_do;
-         a_req <= '0';
+         rd := a_do_cpu;
       end procedure a_access;
 
       procedure a_write(constant ad : in std_logic_vector(20 downto 0); constant wd : in std_logic_vector(7 downto 0)) is

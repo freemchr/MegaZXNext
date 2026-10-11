@@ -35,10 +35,19 @@ set_clock_groups -physically_exclusive -group [get_clocks cpu_clk_div] -group [g
 set_multicycle_path -from [get_clocks main_clk] -to [get_clocks clk_7] -start -setup 2
 set_multicycle_path -from [get_clocks main_clk] -to [get_clocks clk_7] -start -hold 1
 
+## SDRAM port A <-> CPU: 2 cycles of sdram_clk in both directions. Valid because sdram_zxn only
+## samples ram_a_*_i and only changes ram_a_wait/ram_a_do on the sdram_clk edges that coincide
+## with an edge of CLK_28 (see the sdram_zxn.vhd header).
 set_multicycle_path -from [get_clocks sdram_clk] -to [get_clocks {cpu_clk_div cpu_clk_28}] -start -setup 2
 set_multicycle_path -from [get_clocks sdram_clk] -to [get_clocks {cpu_clk_div cpu_clk_28}] -start -hold 1
 set_multicycle_path -from [get_clocks {cpu_clk_div cpu_clk_28}] -to [get_clocks sdram_clk] -setup 2
 set_multicycle_path -from [get_clocks {cpu_clk_div cpu_clk_28}] -to [get_clocks sdram_clk] -hold 1
+
+## The same for the port A signals that come from main_clk (rising and falling edge) logic.
+## Only the port A registers: port B (Layer 2) samples its main_clk inputs on every edge.
+set sdram_port_a [get_cells -hierarchical -filter {NAME =~ CORE/i_main/i_sdram/* && (NAME =~ */a_req_e_reg* || NAME =~ */a_addr_r_reg* || NAME =~ */a_rd_n_r_reg* || NAME =~ */a_di_r_reg* || NAME =~ */a_fetch_r_reg* || NAME =~ */ram_a_wait_reg* || NAME =~ */ram_a_do_reg* || NAME =~ */a_wait_o_reg* || NAME =~ */a_do_o_reg*)}]
+set_multicycle_path -from [get_clocks {main_clk main_clk_n}] -to $sdram_port_a -setup 2
+set_multicycle_path -from [get_clocks {main_clk main_clk_n}] -to $sdram_port_a -hold 1
 
 ## SDRAM I/O: the I/O registers are packed into the IOBs (see sdram_zxn.vhd), which gives
 ## deterministic timing. Same settings as MJoergen's SDRAM controller for the MEGA65.

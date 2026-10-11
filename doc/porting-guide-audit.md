@@ -19,7 +19,8 @@ registers (expected). `check_timing`: 41 inputs / 85 outputs without I/O delays 
 including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins from
 `nr_a2_pi_i2s_ctl_reg[6]` (Pi I²S clock select, unused on the MEGA65).
 
-1. **SDRAM multicycle exceptions vs. `sdram_zxn` input registers** (`CORE/CORE.xdc:37-40`,
+1. **[FIXED: Port A only samples and updates on the edges of CLK_28]** **SDRAM multicycle
+   exceptions vs. `sdram_zxn` input registers** (`CORE/CORE.xdc:37-40`,
    `CORE/vhdl/sdram_zxn.vhd:241-245`). *Verified.*
    - The XDC copies MiSTer's `ZXNext.sdc` 2-cycle setup multicycle from the CPU clocks to
      `sdram_clk`.
@@ -40,6 +41,26 @@ including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins
      simply sampling the inputs one edge later would break that side. Either drop the CPU→`sdram_clk` multicycle and close
      timing at 8.9 ns, or delay the request edge detection until the window the exception
      allows. The GHDL testbench cannot catch this (no timing).
+   - **Fix:**
+     - Launch edges, from the routed R6 design: CPU rise at 112 MHz edge 0 is valid at edge 2;
+       CPU fall at edge 2 is valid at edge 4; `main_clk`/`main_clk_n` are valid one edge after
+       launch. So the inputs are stable on every *even* edge, i.e. each edge of CLK_28.
+     - The CPU captures wait/data on both edges of its clock, 2 cycles after launch. So the
+       outputs may only change on even edges. Before the fix, a completed miss changed
+       `ram_a_wait` on any edge, and the wait→Z80 paths are up to 10.75 ns long.
+     - `sdram_zxn` now takes the CLK_28 phase from `clk_28_i` (a toggle sampled at 112 MHz). It
+       evaluates Port A only on even edges, straight from the inputs, and updates
+       `ram_a_wait_o`/`ram_a_do_o` only on even edges. The hit data no longer waits for the
+       cache compare.
+     - New XDC multicycle: `main_clk`/`main_clk_n` → the Port A registers, 2 cycles.
+     - The testbench now models the ZX Next timing. It drives garbage for up to 2 cycles after
+       each launch (a request glitch plus a phantom write), launches on random CLK_28 edges, uses
+       the real one-cycle request pulse, sees the outputs 2 cycles late, and asserts that they
+       only change on CLK_28 edges.
+       - Old controller: 1780 data mismatches and 14763 odd-edge output changes.
+       - New controller: passes.
+     - R6 build of the fix: WNS +0.366 ns, WHS +0.053 ns. No critical warnings; check_timing and
+       methodology are unchanged from the baseline. Not tested on hardware.
 2. **Register-driven CPU clock** (`zxnext_top_m65.vhd:215-252`, `CORE.xdc:26-32`).
    - `CLK_i0` is a fabric flip-flop feeding a `BUFGMUX_CTRL`. The generated-clock constraints
      make it analyzable. The guide (3.B.3, l.2509) still calls a clock-enable rewrite
@@ -140,7 +161,7 @@ Passes
 Suggested order
 ---------------
 
-1. Before hardware bring-up: 1 and 3 (4, 5 and 6 are fixed).
+1. Before hardware bring-up: 3 (1, 4, 5 and 6 are fixed).
 2. Bring-up on R6, with the CPU at all four speeds and Layer 2 320×256/640×256 (exercises
    SDRAM Port B).
 3. Then: 4, 8, and the documentation items 10–16.

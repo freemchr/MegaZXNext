@@ -289,6 +289,7 @@ begin
       port map (
          clk_i           => clk_sdram_i,
          rst_i           => rst_sdram_i,
+         clk_28_i        => clk_main_i,
 
          ram_a_addr_i    => ram_a_addr,
          ram_a_req_i     => ram_a_req,

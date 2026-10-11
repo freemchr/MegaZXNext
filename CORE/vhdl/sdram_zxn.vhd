@@ -34,11 +34,14 @@
 --    * Port B cache coherency: a Port B hit is only possible after the cache
 --      line has been completely filled, and CPU writes invalidate a matching
 --      Port B cache line (the MiSTer version has small stale data windows).
---    * The Port A inputs are registered once before use. They come from the
---      ZX Next's combinatorial memory decoding (DivMMC, MMU, ...) and would
---      otherwise have to pass that decoding and the cache compare within one
---      8.9 ns cycle. The CPU samples the wait signal 4 cycles after the
---      request, so the wait signal still arrives in time (2 cycles margin).
+--    * Port A is only evaluated, and its outputs only change, on the cycles of
+--      this clock that coincide with an edge (rising or falling) of CLK_28.
+--      The Port A inputs come from the ZX Next's combinatorial memory decoding
+--      (DivMMC, MMU, ...), launched by either edge of CLK_28 or the CPU clock,
+--      and need up to 2 cycles of this clock to settle; in the cycle in between
+--      they can show garbage. The CPU samples ram_a_wait / ram_a_do on either
+--      edge of its clock with paths of up to 2 cycles. The multicycle paths in
+--      CORE.xdc describe exactly this. clk_28_i is only used as phase reference.
 --
 -- clk_i must be 4x the ZX Next's 28 MHz clock and phase aligned with it
 -- (both come from the same MMCM). RAM_A_* and RAM_B_* belong to the 28 MHz
@@ -58,6 +61,7 @@ entity sdram_zxn is
    port (
       clk_i          : in  std_logic;                        -- 112 MHz
       rst_i          : in  std_logic;                        -- synchronous reset: (re-)initializes the SDRAM
+      clk_28_i       : in  std_logic;                        -- ZX Next 28 MHz clock (phase reference)
 
       -- ZX Next port A: CPU / DMA (byte addresses)
       ram_a_addr_i   : in  std_logic_vector(20 downto 0);
@@ -141,14 +145,19 @@ architecture synthesis of sdram_zxn is
    signal last_data  : last_data_t := (others => (others => '0'));
    signal rfsh_cnt   : unsigned(8 downto 0) := (others => '0');
 
-   signal old_a_req  : std_logic := '0';
+   -- Phase of CLK_28: ph = number of this clock's edge within a CLK_28 cycle (0 = rising edge
+   -- of CLK_28, 2 = falling edge). Port A is only evaluated on the even edges.
+   signal t28        : std_logic := '0';                          -- toggles with CLK_28
+   signal t28_s      : std_logic := '0';
+   signal t28_d      : std_logic := '0';
+   signal ph         : unsigned(1 downto 0) := (others => '0');
 
-   -- Port A inputs, registered once (timing: they come from the ZX Next's combinatorial memory
-   -- decoding, launched by a 28 MHz edge; the CPU samples the wait signal 4 cycles later)
+   -- Port A request, latched on the even edge where it is seen first
+   signal a_req_e    : std_logic := '0';                          -- ram_a_req_i at the previous even edge
    signal a_addr_r   : std_logic_vector(20 downto 0) := (others => '0');
-   signal a_req_r    : std_logic := '0';
    signal a_rd_n_r   : std_logic := '1';
    signal a_di_r     : std_logic_vector(7 downto 0) := (others => '0');
+   signal a_fetch_r  : std_logic := '0';
    signal old_b_req  : std_logic := '0';
    signal ch0_busy   : std_logic := '0';                          -- the access being started is for channel 0
    signal ch1_busy   : std_logic := '0';                          -- the access being started is for channel 1
@@ -172,14 +181,16 @@ architecture synthesis of sdram_zxn is
    signal l2_timer   : natural range 0 to 63 := 0;
 
    signal ram_a_do   : std_logic_vector(7 downto 0) := (others => '0');
-   signal ram_a_wait : std_logic := '0';
+   signal ram_a_wait : std_logic := '0';                          -- a port A access is pending
+   signal a_do_o     : std_logic_vector(7 downto 0) := (others => '0');  -- copies that only change on even edges
+   signal a_wait_o   : std_logic := '0';
    signal ram_b_do   : std_logic_vector(7 downto 0) := (others => '0');
 
    signal mode       : std_logic_vector(1 downto 0) := MODE_RESET;
    signal init_cnt   : unsigned(4 downto 0) := (others => '1');
    signal por_cnt    : natural range 0 to C_POR_CYCLES := C_POR_CYCLES;
 
-   signal fetch_req  : std_logic;
+   signal a_fetch    : std_logic;
 
    -- IOB registers
    signal data_reg   : std_logic_vector(15 downto 0) := (others => '0');
@@ -217,11 +228,19 @@ architecture synthesis of sdram_zxn is
 
 begin
 
-   ram_a_do_o   <= ram_a_do;
-   ram_a_wait_o <= ram_a_wait;
+   ram_a_do_o   <= a_do_o;
+   ram_a_wait_o <= a_wait_o;
    ram_b_do_o   <= ram_b_do;
 
-   fetch_req <= '1' when a_rd_n_r = '1' or last_a(0) /= ('0' & a_addr_r(20 downto 2)) else '0';
+   -- straight from the inputs: only valid on the even edges
+   a_fetch <= '1' when ram_a_rd_n_i = '1' or last_a(0) /= ('0' & ram_a_addr_i(20 downto 2)) else '0';
+
+   phase_ref : process (clk_28_i)
+   begin
+      if rising_edge(clk_28_i) then
+         t28 <= not t28;
+      end if;
+   end process phase_ref;
 
    ---------------------------------------------------------------------------------------
    -- Access manager
@@ -234,14 +253,29 @@ begin
       variable a_wa    : std_logic_vector(21 downto 2);
       variable b_hit   : boolean;
       variable b_block : boolean;
+      variable even    : boolean;
+      variable v_wait  : std_logic;
+      variable v_do    : std_logic_vector(7 downto 0);
    begin
       if rising_edge(clk_i) then
          data_reg <= sdram_dq_in_i;
 
-         a_addr_r <= ram_a_addr_i;
-         a_req_r  <= ram_a_req_i;
-         a_rd_n_r <= ram_a_rd_n_i;
-         a_di_r   <= ram_a_di_i;
+         -- next values of ram_a_wait / ram_a_do
+         v_wait := ram_a_wait;
+         v_do   := ram_a_do;
+
+         ---------------------------------------------------------------------------------
+         -- CLK_28 phase: t28 changes after edge 0, t28_s takes it at edge 1, t28_d at edge 2
+         ---------------------------------------------------------------------------------
+
+         t28_s <= t28;
+         t28_d <= t28_s;
+         if t28_s /= t28_d then
+            ph <= "11";
+         else
+            ph <= ph + 1;
+         end if;
+         even := ph(0) = '0';
 
          if rfsh_cnt /= "111111111" then
             rfsh_cnt <= rfsh_cnt + 1;
@@ -268,12 +302,19 @@ begin
          -- Cache hits
          ---------------------------------------------------------------------------------
 
-         old_a_req <= a_req_r;
-         if old_a_req = '0' and a_req_r = '1' then
-            if rfsh_cnt(8) = '1' or fetch_req = '1' then
-               ram_a_wait <= '1';
-            else
-               ram_a_do <= byte_sel(last_data(0), a_addr_r(1 downto 0));
+         if even then
+            a_req_e <= ram_a_req_i;
+            if a_req_e = '0' and ram_a_req_i = '1' then
+               a_addr_r  <= ram_a_addr_i;
+               a_rd_n_r  <= ram_a_rd_n_i;
+               a_di_r    <= ram_a_di_i;
+               a_fetch_r <= a_fetch;
+               -- the cached byte (timing: does not wait for the cache compare); on a miss the CPU
+               -- waits and gets the data with the end of the wait
+               v_do      := byte_sel(last_data(0), ram_a_addr_i(1 downto 0));
+               if rfsh_cnt(8) = '1' or a_fetch = '1' then
+                  v_wait := '1';
+               end if;
             end if;
          end if;
 
@@ -314,13 +355,12 @@ begin
                ch1_busy  <= '1';
                ch1_fill  <= '1';
                state     <= STATE_START;
-            elsif not b_block and a_inflight = '0' and
-                  ((old_a_req = '0' and a_req_r = '1' and (fetch_req = '1' or rfsh_cnt(8) = '1')) or ram_a_wait = '1') then
+            elsif not b_block and a_inflight = '0' and ram_a_wait = '1' then
                we         <= a_rd_n_r;
                bank       <= "00";
                a          <= "00" & a_addr_r;
                data       <= a_di_r & a_di_r;
-               ram_req    <= fetch_req;
+               ram_req    <= a_fetch_r;
                a_wa       := '0' & a_addr_r(20 downto 2);
                if a_rd_n_r = '1' then
                   last_a(0) <= (others => '1');
@@ -379,16 +419,16 @@ begin
                rfsh_cnt <= (others => '0');
             end if;
             if dl_ch0 = '1' then
-               ram_a_wait <= '0';
+               v_wait     := '0';
                a_inflight <= '0';
                if dl_req = '1' then
                   if dl_we = '1' then
-                     ram_a_do <= dl_data;
+                     v_do := dl_data;
                   else
                      if dl_a(0) = '1' then
-                        ram_a_do <= data_reg(15 downto 8);
+                        v_do := data_reg(15 downto 8);
                      else
-                        ram_a_do <= data_reg(7 downto 0);
+                        v_do := data_reg(7 downto 0);
                      end if;
                      if dl_a(1) = '1' then
                         last_data(0)(31 downto 16) <= data_reg;
@@ -398,7 +438,7 @@ begin
                      store <= "1" & "0" & not dl_a(1);
                   end if;
                else
-                  ram_a_do <= byte_sel(last_data(0), dl_a);
+                  v_do := byte_sel(last_data(0), dl_a);
                end if;
             end if;
             if dl_ch1 = '1' then
@@ -418,7 +458,7 @@ begin
 
          if rst_i = '1' then
             state      <= STATE_IDLE;
-            ram_a_wait <= '0';
+            v_wait     := '0';
             ch0_busy   <= '0';
             ch1_busy   <= '0';
             a_inflight <= '0';
@@ -427,6 +467,13 @@ begin
             store      <= "000";
             l2_timer   <= 0;
             last_a     <= (others => (others => '1'));
+         end if;
+
+         ram_a_wait <= v_wait;
+         ram_a_do   <= v_do;
+         if even then
+            a_wait_o <= v_wait;
+            a_do_o   <= v_do;
          end if;
       end if;
    end process access_manager;
