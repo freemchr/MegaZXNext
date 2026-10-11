@@ -68,7 +68,7 @@ MEGA65 R4, R5 or R6".
 │   ├── CORE.xdc            core clocks, CPU BUFGMUX clocks, multicycles, SDRAM IOB packing
 │   └── CORE-R{3,4,5,6}.xpr Vivado 2026.1 projects (same sources, different top/XDC/G_BOARD)
 └── doc/
-    ├── m2m/                M2M conventions; ⚠ exceptions.md is still the template (see §8)
+    ├── m2m/                M2M conventions; exceptions.md = how to re-apply our changes on updates
     ├── m2m-v2.1.0-upgrade.md   plan for moving M2M/ to V2.1.0
     ├── porting-guide-audit.md  audit against the M2M porting guide: open gaps
     └── temp/               M2M framework scratch notes, NOT about this core
@@ -282,9 +282,10 @@ check_timing -verbose -file check_timing.rpt
 ## 8. Open items
 
 The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. Highest
-priority: the SDRAM I/O constraints (audit item 3), then hardware bring-up on R6. Release hygiene that is still on the template:
-`README.md`, `AUTHORS`, `VERSIONS.md`, `doc/m2m/exceptions.md`, the `CORE/m2m-rom/m2m-rom.asm`
-header, and "Version [WIP]" in the welcome screen.
+priority: hardware bring-up on R6 (the only board available for testing; R4/R5 are build-only),
+then the SDRAM I/O constraints (audit item 3). Release hygiene that is still on the template:
+`README.md`, `AUTHORS`, `VERSIONS.md`, the `CORE/m2m-rom/m2m-rom.asm` header, and
+"Version [WIP]" in the welcome screen.
 
 ## 9. Lessons from other M2M ports
 

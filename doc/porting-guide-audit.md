@@ -88,10 +88,14 @@ including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins
 7. **Audio level / DC blocker** (`zxn_dc_blocker.vhd:39-46`).
    - The output is `audio & "000"`, about −6 dB relative to MiSTer's `{aud,4'b0}`.
    - The DC estimate starts at 0 and is never reset, so expect a thump at power-on. Minor.
-8. **Reset during SD writes.** Resets drive the core directly (`main.vhd:202`). That is fine
+8. **[NOT DONE: low value, see below]** **Reset during SD writes.** Resets drive the core directly (`main.vhd:202`). That is fine
    without vdrives (S60, l.1442). But the ZX Next writes its own SD card, and nothing holds a
    reset off while `sd_active` is high, so a reset mid-write can corrupt the card's FAT.
    Consider delaying the reset until SPI is idle.
+   - **Decision:** not implemented. Holding the reset off while SPI is busy only protects a
+     single block transfer, and that one is already safe: the card discards a block that ends
+     early, and finishes programming a complete one on its own. The real risk is a FAT update
+     spread over several writes, which a delay of microseconds does not cover.
 9. **CONF_STR features dropped without a record** (guide S6/S14, l.1055/1106):
    - tape loading;
    - Kempston mouse;
@@ -107,7 +111,7 @@ including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins
     the entity is fixed (1.2.1, l.364; App. B, l.4473). Here, `top_mega65-r4/r5/r6.vhd` were
     patched and `mega65.vhd:224-255` adds SD and SDRAM ports. This is justified (M2M V2.0.1
     has no SDRAM support and the core must own the SD cards), but it must be written down.
-11. **`doc/m2m/exceptions.md` is still the template** (S35, l.1272). It should list:
+11. **[FIXED: written as an update how-to]** **`doc/m2m/exceptions.md` is still the template** (S35, l.1272). It should list:
     - the M2M top-file edits;
     - the entity extension;
     - `t80n.vhd`, `zxnext_top_m65.vhd` and `bram_xilinx.vhd` as replacements of upstream files;
@@ -119,7 +123,7 @@ including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins
     - `VERSIONS.md` (M2M's changelog);
     - `CORE/m2m-rom/m2m-rom.asm` header ("YOUR-PROJECT-NAME…");
     - the welcome screen's "Powered by MiSTer2MEGA65 Version [WIP] … 2022" (`config.vhd:83`).
-13. **No fork of the MiSTer core** (S31–S33, l.1232–1259). The submodule points at MiSTer-devel
+13. **[FIXED: documented in `exceptions.md`]** **No fork of the MiSTer core** (S31–S33, l.1232–1259). The submodule points at MiSTer-devel
     directly, and changed files are replaced from `CORE/vhdl/zxnext/` instead. That works, but
     it has to be documented (see 11).
 14. **Project-file drift.** `rtc.sv` has `SFType="SVerilog"` in R3–R5 but not in R6. R6 alone
