@@ -24,8 +24,9 @@ on the task, not on rediscovering the layout.
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
   three top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
-- **Status:** R6 synthesizes with Vivado 2026.1 and meets timing. **Not yet tested on
+- **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **Not yet tested on
   hardware.** Treat every behavioral claim as unverified until someone runs it on a MEGA65.
+  The maintainer can only test on R6; R4/R5 need outside testers before they are called working.
 
 ### Target boards
 

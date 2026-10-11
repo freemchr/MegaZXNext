@@ -61,6 +61,8 @@ including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins
        - New controller: passes.
      - R6 build of the fix: WNS +0.366 ns, WHS +0.053 ns. No critical warnings; check_timing and
        methodology are unchanged from the baseline. Not tested on hardware.
+     - R4 and R5 builds of the fix (2026-10-11, first builds of these boards): timing met, no
+       critical warnings. R4 WNS +0.339 ns, WHS +0.009 ns; R5 WNS +0.220 ns, WHS +0.053 ns.
 2. **Register-driven CPU clock** (`zxnext_top_m65.vhd:215-252`, `CORE.xdc:26-32`).
    - `CLK_i0` is a fabric flip-flop feeding a `BUFGMUX_CTRL`. The generated-clock constraints
      make it analyzable. The guide (3.B.3, l.2509) still calls a clock-enable rewrite
