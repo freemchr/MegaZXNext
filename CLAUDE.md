@@ -7,10 +7,13 @@ Use the shared project guide above (`AGENTS.md`) as the source of truth for this
 Things that most often trip up work here:
 
 - This is a **core**, not the M2M framework. `M2M/` is read-only except the three patched board
-  tops (R4/R5/R6) that route SD and SDRAM to the core (AGENTS.md §4).
-- The core owns **both SD slots**; the QNICE Shell has no SD card (AGENTS.md §3.3).
-- Run the GHDL testbench (`cd CORE/sim && make`) after any change to `sdram_zxn.vhd`.
-- The port has not been tested on hardware yet. Don't describe behavior as verified unless it was.
+  tops (R4/R5/R6) that route SDRAM and the SD slots to the core (AGENTS.md §4).
+- The ZX Next's SD card is an **image file** on the MEGA65 card; after startup the core drives the
+  card and QNICE must not touch it (AGENTS.md §3.3).
+- Run the GHDL testbenches (`cd CORE/sim && make`) after any change to `sdram_zxn.vhd`,
+  `sd_image.vhd` or `sd_card_zxn.vhd`.
+- Only partly tested on hardware (R6: NextZXOS boots, Browser hangs). Don't describe behavior as
+  verified unless it was run on a MEGA65.
 
 ## M2M porting lessons
 

@@ -224,19 +224,26 @@ port (
    -- ZX Next specific board I/O (R4, R5, R6)
    --------------------------------------------------------------------------------------------------------
 
-   -- The ZX Next accesses the SD cards directly (SPI mode). Both slots are owned by the core.
-   -- SD card slot at the back of the machine (external micro SD)
+   -- SD card slots. The framework (QNICE) drives them, except the slot that holds the ZX Next's
+   -- SD card image while the image is mounted: then the core drives that slot (see below).
+   -- MISO and card detect go from the pins to the framework directly (top level file).
+   -- Slot at the back of the machine (external micro SD)
    sd_reset_o              : out std_logic;              -- = SPI chip select (low active)
    sd_clk_o                : out std_logic;
    sd_mosi_o               : out std_logic;
    sd_miso_i               : in  std_logic := '1';
-   sd_cd_i                 : in  std_logic := '1';       -- card detect (low active)
-   -- SD card slot in the bottom tray (internal)
+   -- Slot in the bottom tray (internal)
    sd2_reset_o             : out std_logic;
    sd2_clk_o               : out std_logic;
    sd2_mosi_o              : out std_logic;
    sd2_miso_i              : in  std_logic := '1';
-   sd2_cd_i                : in  std_logic := '1';
+   -- The framework's outputs for both slots
+   fw_sd_reset_i           : in  std_logic := '1';
+   fw_sd_clk_i             : in  std_logic := '0';
+   fw_sd_mosi_i            : in  std_logic := '1';
+   fw_sd2_reset_i          : in  std_logic := '1';
+   fw_sd2_clk_i            : in  std_logic := '0';
+   fw_sd2_mosi_i           : in  std_logic := '1';
 
    -- SDRAM - 32M x 16 bit, 3.3V VCC. U44 = IS42S16320F-6BL
    -- The tri-state buffers for DQ are inferred in the top level file
@@ -294,19 +301,63 @@ constant C_MENU_IMPROVE_AUDIO    : natural := 26;
 signal main_scandoubler       : std_logic;
 signal main_sd_active         : std_logic;
 
--- ZX Next SD card interface
-signal main_sd_cs0_n          : std_logic;
-signal main_sd_cs1_n          : std_logic;
+-- SD card image (see sd_image.vhd), from the QNICE registers below
+signal main_img_cfg           : std_logic_vector(43 downto 0);
+signal main_img_enable        : std_logic;
+signal main_img_slot          : std_logic;               -- 1 = back slot, 0 = bottom tray
+signal main_img_size          : std_logic_vector(31 downto 0);
+signal main_img_ext_count     : std_logic_vector(9 downto 0);
+signal main_img_ext_addr      : std_logic_vector(8 downto 0);
+signal main_img_ext_data      : std_logic_vector(63 downto 0);
+signal main_img_err_cnt       : std_logic_vector(15 downto 0);
+signal main_dbg               : std_logic_vector(159 downto 0);
+signal qnice_dbg              : std_logic_vector(159 downto 0);
+signal qnice_trace_addr       : std_logic_vector(9 downto 0) := (others => '0');
+signal main_trace_addr        : std_logic_vector(9 downto 0);
+signal main_trace             : std_logic_vector(58 downto 0);
+signal qnice_trace            : std_logic_vector(58 downto 0);
+signal main_own_back          : std_logic;
+signal main_own_tray          : std_logic;
+
+-- Physical SD card, driven by the core
+signal main_sd_cs_n           : std_logic;
 signal main_sd_sclk           : std_logic;
 signal main_sd_mosi           : std_logic;
 signal main_sd_miso           : std_logic;
-signal main_sd_back_primary   : std_logic := '1';        -- 1 = ZX Next's SD0 is the back slot
-signal main_sd_cd_back        : std_logic_vector(1 downto 0) := "11";
+
+---------------------------------------------------------------------------------------------
+-- qnice_clk
+---------------------------------------------------------------------------------------------
+
+-- Device C_DEV_ZXN_IMG (globals.vhd): where the ZX Next's SD card image is (set by zxn_mount.asm)
+--    0x0002 / 0x0003   size of the image in sectors: low / high word
+--    0x0004            slot: 1 = back slot, 0 = bottom tray (M2M$CSR_SD_ACTIVE semantics)
+--    0x0005            1 = mounted: the core takes the slot and the ZX Next leaves reset.
+--                      Write this last; nothing else may change while it is 1.
+--    0x0006            (read only) number of sectors that failed three times
+--    0x0007            number of extents (1 .. 512)
+--    0x0010 / 0x0011   extent: first virtual sector, low / high word
+--    0x0012 / 0x0013   extent: first physical sector, low / high word
+--    0x0014            write: store the extent (0x0010 .. 0x0013) as table entry n (0 .. 511)
+-- Extents are the pieces of the image file on the card, sorted by virtual sector, the first one
+-- starting at virtual sector 0 (see sd_image.vhd).
+signal qnice_img_size         : std_logic_vector(31 downto 0) := (others => '0');
+signal qnice_img_ext_count    : std_logic_vector(9 downto 0) := (others => '0');
+signal qnice_img_ext_stage    : std_logic_vector(63 downto 0) := (others => '0');   -- physical & virtual
+
+-- Extent table: written by QNICE, read by sd_image.vhd. A dual-clock RAM (the CDC); QNICE only
+-- writes it while the image is not mounted, so the core never reads an entry that is changing.
+type img_ext_ram_t is array (0 to 511) of std_logic_vector(63 downto 0);
+signal img_ext_ram            : img_ext_ram_t;
+signal qnice_img_slot         : std_logic := '0';
+signal qnice_img_enable       : std_logic := '0';
+signal qnice_img_err_cnt      : std_logic_vector(15 downto 0);
 
 begin
 
-   -- The ZX Next's RAM lives in the SDRAM and the core owns the SD card slots: only the R4, R5 and R6
-   -- board top files (M2M/vhdl/top_mega65-r4/5/6.vhd) wire them to the core. R3 has no SDRAM.
+   -- The ZX Next's RAM lives in the SDRAM and the core drives the SD card slot that holds its image:
+   -- only the R4, R5 and R6 board top files (M2M/vhdl/top_mega65-r4/5/6.vhd) wire them to the core.
+   -- R3 has no SDRAM.
    assert G_BOARD /= "MEGA65_R3"
       report "The ZX Spectrum Next core needs a MEGA65 R4, R5 or R6: R3 has no SDRAM"
       severity failure;
@@ -463,8 +514,18 @@ begin
 
          rtc_i                => main_rtc_i,
 
-         sd_cs0_n_o           => main_sd_cs0_n,
-         sd_cs1_n_o           => main_sd_cs1_n,
+         img_enable_i         => main_img_enable,
+         img_size_i           => main_img_size,
+         img_ext_count_i      => main_img_ext_count,
+         img_ext_addr_o       => main_img_ext_addr,
+         img_ext_data_i       => main_img_ext_data,
+         img_err_cnt_o        => main_img_err_cnt,
+         dbg_o                => main_dbg,
+         dbg_trace_addr_i     => main_trace_addr,
+         dbg_trace_data_o     => main_trace(47 downto 0),
+         dbg_trace_count_o    => main_trace(58 downto 48),
+
+         sd_cs_n_o            => main_sd_cs_n,
          sd_sclk_o            => main_sd_sclk,
          sd_mosi_o            => main_sd_mosi,
          sd_miso_i            => main_sd_miso,
@@ -486,32 +547,46 @@ begin
       ); -- i_main
 
    ---------------------------------------------------------------------------------------------
-   -- SD cards
+   -- SD card slots
    --
-   -- The ZX Next's SD0 (boot card) is the card in the back slot, if there is one, otherwise the
-   -- card in the bottom tray. SD1 is the other slot. The selection is latched during reset so
-   -- that inserting or removing a card cannot switch cards in the middle of a transfer.
+   -- The ZX Next's SD card is an image file on the MEGA65's SD card. The QNICE Shell finds it at
+   -- startup (m2m-rom.asm) and passes its position through the C_DEV_ZXN_IMG registers. From
+   -- then on the core drives the slot that holds the image; QNICE does not use the card any more.
    ---------------------------------------------------------------------------------------------
 
-   sd_select_proc : process (main_clk)
+   i_cdc_img_cfg : entity work.cdc_stable
+      generic map (
+         G_DATA_SIZE => 44
+      )
+      port map (
+         src_clk_i   => qnice_clk_i,
+         src_data_i  => qnice_img_enable & qnice_img_slot & qnice_img_ext_count & qnice_img_size,
+         dst_clk_i   => main_clk,
+         dst_data_o  => main_img_cfg
+      ); -- i_cdc_img_cfg
+
+   main_img_enable    <= main_img_cfg(43);
+   main_img_slot      <= main_img_cfg(42);
+   main_img_ext_count <= main_img_cfg(41 downto 32);
+   main_img_size      <= main_img_cfg(31 downto 0);
+
+   main_img_ext_read_proc : process (main_clk)
    begin
       if rising_edge(main_clk) then
-         main_sd_cd_back <= main_sd_cd_back(0) & sd_cd_i;   -- synchronize (low active)
-         if main_rst = '1' or main_reset_core_i = '1' or main_reset_m2m_i = '1' then
-            main_sd_back_primary <= not main_sd_cd_back(1);
-         end if;
+         main_img_ext_data <= img_ext_ram(to_integer(unsigned(main_img_ext_addr)));
       end if;
-   end process sd_select_proc;
+   end process main_img_ext_read_proc;
 
-   sd_reset_o   <= main_sd_cs0_n when main_sd_back_primary = '1' else main_sd_cs1_n;
-   sd2_reset_o  <= main_sd_cs1_n when main_sd_back_primary = '1' else main_sd_cs0_n;
-   sd_clk_o     <= main_sd_sclk;
-   sd2_clk_o    <= main_sd_sclk;
-   sd_mosi_o    <= main_sd_mosi;
-   sd2_mosi_o   <= main_sd_mosi;
-   main_sd_miso <= sd_miso_i  when (main_sd_back_primary = '1' and main_sd_cs0_n = '0') or
-                                   (main_sd_back_primary = '0' and main_sd_cs1_n = '0') else
-                   sd2_miso_i;
+   main_own_back <= main_img_enable and main_img_slot;
+   main_own_tray <= main_img_enable and not main_img_slot;
+
+   sd_reset_o    <= main_sd_cs_n when main_own_back = '1' else fw_sd_reset_i;
+   sd_clk_o      <= main_sd_sclk when main_own_back = '1' else fw_sd_clk_i;
+   sd_mosi_o     <= main_sd_mosi when main_own_back = '1' else fw_sd_mosi_i;
+   sd2_reset_o   <= main_sd_cs_n when main_own_tray = '1' else fw_sd2_reset_i;
+   sd2_clk_o     <= main_sd_sclk when main_own_tray = '1' else fw_sd2_clk_i;
+   sd2_mosi_o    <= main_sd_mosi when main_own_tray = '1' else fw_sd2_mosi_i;
+   main_sd_miso  <= sd_miso_i when main_img_slot = '1' else sd2_miso_i;
 
    ---------------------------------------------------------------------------------------------
    -- Audio and video settings (QNICE clock domain)
@@ -560,9 +635,96 @@ begin
    -- Core specific device handling (QNICE clock domain)
    ---------------------------------------------------------------------------------------------
 
-   -- The ZX Next loads its firmware, ROMs and the operating system (NextZXOS) itself from the
-   -- SD card, therefore there are no core specific QNICE devices.
-   qnice_dev_data_o     <= x"EEEE";
+   -- C_DEV_ZXN_IMG: the ZX Next's SD card image (see the register map above)
+   qnice_img_regs_proc : process (qnice_clk_i)
+   begin
+      if rising_edge(qnice_clk_i) then
+         if qnice_dev_ce_i = '1' and qnice_dev_we_i = '1' and qnice_dev_id_i = C_DEV_ZXN_IMG then
+            case to_integer(unsigned(qnice_dev_addr_i(11 downto 0))) is
+               when 2      => qnice_img_size(15 downto 0)          <= qnice_dev_data_i;
+               when 3      => qnice_img_size(31 downto 16)         <= qnice_dev_data_i;
+               when 4      => qnice_img_slot                       <= qnice_dev_data_i(0);
+               when 5      => qnice_img_enable                     <= qnice_dev_data_i(0);
+               when 7      => qnice_img_ext_count                  <= qnice_dev_data_i(9 downto 0);
+               when 16#30# => qnice_trace_addr                     <= qnice_dev_data_i(9 downto 0);
+               when 16#10# => qnice_img_ext_stage(15 downto 0)     <= qnice_dev_data_i;
+               when 16#11# => qnice_img_ext_stage(31 downto 16)    <= qnice_dev_data_i;
+               when 16#12# => qnice_img_ext_stage(47 downto 32)    <= qnice_dev_data_i;
+               when 16#13# => qnice_img_ext_stage(63 downto 48)    <= qnice_dev_data_i;
+               when 16#14# => img_ext_ram(to_integer(unsigned(qnice_dev_data_i(8 downto 0)))) <= qnice_img_ext_stage;
+               when others => null;
+            end case;
+         end if;
+         if qnice_rst_i = '1' then
+            qnice_img_enable <= '0';
+         end if;
+      end if;
+   end process qnice_img_regs_proc;
+
+   i_cdc_img_err_cnt : entity work.cdc_stable
+      generic map (
+         G_DATA_SIZE => 16
+      )
+      port map (
+         src_clk_i   => main_clk,
+         src_data_i  => main_img_err_cnt,
+         dst_clk_i   => qnice_clk_i,
+         dst_data_o  => qnice_img_err_cnt
+      ); -- i_cdc_img_err_cnt
+
+   -- Debug words (main.vhd dbg_o): registers 0x20 .. 0x29
+   i_cdc_dbg : entity work.cdc_stable
+      generic map (
+         G_DATA_SIZE => 160
+      )
+      port map (
+         src_clk_i   => main_clk,
+         src_data_i  => main_dbg,
+         dst_clk_i   => qnice_clk_i,
+         dst_data_o  => qnice_dbg
+      ); -- i_cdc_dbg
+
+   i_cdc_trace_addr : entity work.cdc_stable
+      generic map (G_DATA_SIZE => 10)
+      port map (src_clk_i => qnice_clk_i, src_data_i => qnice_trace_addr,
+                dst_clk_i => main_clk, dst_data_o => main_trace_addr);
+
+   i_cdc_trace : entity work.cdc_stable
+      generic map (G_DATA_SIZE => 59)
+      port map (src_clk_i => main_clk, src_data_i => main_trace,
+                dst_clk_i => qnice_clk_i, dst_data_o => qnice_trace);
+
+   qnice_img_read_proc : process (all)
+   begin
+      qnice_dev_data_o <= x"EEEE";
+      if qnice_dev_id_i = C_DEV_ZXN_IMG then
+         case to_integer(unsigned(qnice_dev_addr_i(11 downto 0))) is
+            when 2      => qnice_dev_data_o <= qnice_img_size(15 downto 0);
+            when 3      => qnice_dev_data_o <= qnice_img_size(31 downto 16);
+            when 4      => qnice_dev_data_o <= x"000" & "000" & qnice_img_slot;
+            when 5      => qnice_dev_data_o <= x"000" & "000" & qnice_img_enable;
+            when 6      => qnice_dev_data_o <= qnice_img_err_cnt;
+            when 7      => qnice_dev_data_o <= "000000" & qnice_img_ext_count;
+            when 16#30# => qnice_dev_data_o <= "000000" & qnice_trace_addr;
+            when 16#31# => qnice_dev_data_o <= qnice_trace(15 downto 0);
+            when 16#32# => qnice_dev_data_o <= qnice_trace(31 downto 16);
+            when 16#33# => qnice_dev_data_o <= qnice_trace(47 downto 32);
+            when 16#34# => qnice_dev_data_o <= "00000" & qnice_trace(58 downto 48);
+            when 16#20# => qnice_dev_data_o <= qnice_dbg(15 downto 0);
+            when 16#21# => qnice_dev_data_o <= qnice_dbg(31 downto 16);
+            when 16#22# => qnice_dev_data_o <= qnice_dbg(47 downto 32);
+            when 16#23# => qnice_dev_data_o <= qnice_dbg(63 downto 48);
+            when 16#24# => qnice_dev_data_o <= qnice_dbg(79 downto 64);
+            when 16#25# => qnice_dev_data_o <= qnice_dbg(95 downto 80);
+            when 16#26# => qnice_dev_data_o <= qnice_dbg(111 downto 96);
+            when 16#27# => qnice_dev_data_o <= qnice_dbg(127 downto 112);
+            when 16#28# => qnice_dev_data_o <= qnice_dbg(143 downto 128);
+            when 16#29# => qnice_dev_data_o <= qnice_dbg(159 downto 144);
+            when others => null;
+         end case;
+      end if;
+   end process qnice_img_read_proc;
+
    qnice_dev_wait_o     <= '0';
 
 end architecture synthesis;

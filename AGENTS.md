@@ -17,22 +17,27 @@ on the task, not on rediscovering the layout.
 
 - **ZX Spectrum Next**: an FPGA-based, enhanced ZX Spectrum (Z80N CPU at 3.5/7/14/28 MHz,
   Layer 2 / tilemap / sprites, AY×3, DivMMC, Multiface, 2 MB RAM). It boots its firmware
-  (`TBBLUE.FW`, `TBBLUE.TBU`), ROMs and NextZXOS **from its own SD card**.
+  (`TBBLUE.FW`, `TBBLUE.TBU`), ROMs and NextZXOS **from its own SD card**, which on the MEGA65
+  (as on MiSTer) is an **image file**: `/zxnext/boot.vhd` or `/zxnext/boot.img` on the MEGA65's
+  SD card. Core version 3.02.00, which matches System/Next 24.11 (the latest distribution).
 - **MiSTer core:** [MiSTer-devel/ZXNext_MISTer](https://github.com/MiSTer-devel/ZXNext_MISTer),
   pinned as the git submodule `CORE/ZXNext_MiSTer` (commit `7daebd1`). Original ZX Next RTL
   by Alvin Albrecht, Fabio Belavenuto, Victor Trucco et al.; MiSTer port by Sorgelig.
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
   three top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
-- **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **Not yet tested on
-  hardware.** Treat every behavioral claim as unverified until someone runs it on a MEGA65.
-  The maintainer can only test on R6; R4/R5 need outside testers before they are called working.
+- **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **R6 bring-up in
+  progress:** NextZXOS boots from `/zxnext/boot.img` and its menus work; the Browser hangs (open).
+  Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
+  on R6; R4/R5 are untested and need outside testers before they are called working.
+- **Debug logic:** `main.vhd`/`mega65.vhd` still contain bring-up instrumentation (`dbg_*`,
+  `C_DEV_ZXN_IMG` registers 0x20..0x34). Remove it before a release.
 
 ### Target boards
 
 The ZX Next's 2 MB of RAM live in the MEGA65's **SDRAM**, which only exists on **R4, R5, R6**.
 `CORE/CORE-R3.xpr` exists, but the R3 top file is stock M2M and R3 has no SDRAM, so the core
-would have no RAM and no SD card. An `assert` in `mega65.vhd` makes the R3 build fail on purpose:
+would have no RAM and no access to its SD card image. An `assert` in `mega65.vhd` makes the R3 build fail on purpose:
 **R3 is not a supported target**. The help screen says "Requires a
 MEGA65 R4, R5 or R6".
 
@@ -59,13 +64,15 @@ MEGA65 R4, R5 or R6".
 │   │   ├── config.vhd      OSM menu (31 lines), welcome screen, 2 help pages
 │   │   ├── keyboard.vhd    MEGA65 keyboard → ZX Next 8×7 membrane matrix
 │   │   ├── sdram_zxn.vhd   SDRAM controller (VHDL translation of MiSTer rtl/mister/sdram.sv)
+│   │   ├── sd_image.vhd    the ZX Next's SD card = image file on the MEGA65 card (sector engine)
+│   │   ├── sd_card_zxn.vhd virtual SPI SD card (VHDL translation of MiSTer sys/sd_card.sv)
 │   │   ├── zxn_dc_blocker.vhd  audio DC blocker
 │   │   └── zxnext/         replacements for MiSTer files, compiled into library "zxnext":
 │   │       ├── zxnext_top_m65.vhd  derived from rtl/mister/zxnext_top.vhd (MEGA65 top of the ZX Next)
 │   │       ├── bram_xilinx.vhd     replaces rtl/mister/bram.vhd (Altera altsyncram/altdpram → inferred RAM)
 │   │       └── t80n.vhd            patched copy of rtl/cpu/t80n.vhd (vector-length fix Vivado needs)
-│   ├── m2m-rom/            QNICE Shell ROM (m2m-rom.asm is the unmodified template)
-│   ├── sim/                GHDL testbench for sdram_zxn (+ MJoergen's SDRAM model, MIT)
+│   ├── m2m-rom/            QNICE Shell ROM (m2m-rom.asm: PREP_START mounts the SD card image)
+│   ├── sim/                GHDL testbenches: sdram_zxn (+ MJoergen's SDRAM model, MIT), sd_image
 │   ├── CORE.xdc            core clocks, CPU BUFGMUX clocks, multicycles, SDRAM IOB packing
 │   └── CORE-R{3,4,5,6}.xpr Vivado 2026.1 projects (same sources, different top/XDC/G_BOARD)
 └── doc/
@@ -80,13 +87,15 @@ MEGA65 R4, R5 or R6".
 ## 3. Architecture
 
 ```
-M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SD + SDRAM routed to CORE)
-├── i_framework : framework.vhd        stock M2M; QNICE sees two EMPTY SD slots
+M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD outputs via CORE)
+├── i_framework : framework.vhd        stock M2M; QNICE has both SD slots until the image is mounted
 └── CORE : MEGA65_Core (CORE/vhdl/mega65.vhd)
       ├── clk_gen : clk.vhd            MMCM 100 MHz → 700 MHz VCO → 112 / 28 / 28∠180 / 14 / 7 MHz
-      ├── sd_select_proc               maps ZX Next SD0/SD1 onto the back slot / bottom tray
+      ├── C_DEV_ZXN_IMG registers      image position from QNICE (cdc_stable → main_clk)
+      ├── SD slot mux                  slot with the image: core; otherwise the framework
       ├── i_main : main.vhd            28 MHz domain
       │     ├── i_zxnext_top : zxnext_top_m65 (library zxnext) → the MiSTer ZX Next RTL
+      │     ├── i_sd_image : sd_image  SD0 = virtual card (sd_card_zxn) served from the image
       │     ├── i_sdram : sdram_zxn    112 MHz, 2 MB, ports A (CPU/DMA) and B (Layer 2)
       │     ├── rtc (MiSTer)           DS1307 emulation fed by M2M's main_rtc_i
       │     ├── keyboard.vhd           membrane matrix
@@ -125,19 +134,48 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SD + SDRAM routed t
   The inputs come from the ZX Next's combinational memory decode, launched by either CLK_28/CPU
   edge, and are garbage for up to 2 cycles in between. This is what the CPU↔`sdram_clk`
   multicycles in `CORE.xdc` assume; keep the two in sync.
+- **Port A must accept a request while it is busy.** At 28 MHz the Z80N cannot be stalled by its
+  own write (WR goes low in T2, when WAIT is sampled), so the next request (e.g. the opcode fetch
+  after a `CALL`'s push) can arrive before the write is served. `sdram_zxn` queues one such
+  request (`a_queued`, `a_q_*`) and keeps `ram_a_wait` high until it is served. Without it the read
+  returned the written byte and TBBLUE.FW crashed (found on R6 hardware). Test 9 in
+  `tb_sdram_zxn.vhd` covers it.
 - DQ is split into `dq_out`/`dq_oe_n`/`dq_in`. The tri-states are in the patched board tops.
 - **Simulate before touching it:** `cd CORE/sim && make` (GHDL, `--std=08`). The testbench uses
   MJoergen's SDRAM model and checks with `--assert-level=error`.
 
-### 3.3 SD cards (`mega65.vhd` `sd_select_proc`)
+### 3.3 SD card image (`sd_image.vhd`, `sd_card_zxn.vhd`, `m2m-rom.asm`, `mega65.vhd`)
 
-- The ZX Next talks SPI to its SD cards itself, with two chip selects (SD0 = boot card, SD1).
-  **Both MEGA65 SD slots are owned by the core**, not by QNICE. Consequences:
-  - The M2M Shell has **no SD card**: no file browser, no ROM loading, no settings file
-    (`SAVE_SETTINGS = false`, `C_VDNUM = 0`, `C_CRTROMS_*_NUM = 0`). Do not enable any of these
-    without first giving QNICE an SD path.
-  - SD0 = back slot if a card is there at reset, otherwise the bottom tray; SD1 = the other.
-    The choice is latched during reset (card detect is synchronized in `main_clk`).
+- The ZX Next talks SPI to its SD card. As on MiSTer, that card is an **image file**: SD0 is a
+  virtual SD card (`sd_card_zxn.vhd`, a VHDL translation of MiSTer's `sys/sd_card.sv`) whose
+  sectors are served from `/zxnext/boot.vhd` (or `/zxnext/boot.img`) on the MEGA65's SD card.
+  SD1 has no card. A MiSTer `boot.vhd` (fixed VHD = raw image + 512-byte footer) works as is.
+- **Startup:** the Shell's `PREP_START` calls `ZXN_MOUNT` (`CORE/m2m-rom/zxn_mount.asm`): it mounts
+  the card, opens the image and walks its FAT chain. Every piece of the file (**extent**: first
+  virtual sector, first physical sector) goes into the core's 512-entry extent table; then size,
+  extent count and slot go to device `C_DEV_ZXN_IMG` (`globals.vhd`; register map in
+  `mega65.vhd`), "mounted" last. Fragmented files are fine (up to 512 pieces). Errors (no card, no
+  image, more than 512 pieces, broken chain) are fatal Shell errors with instructions. The serial
+  log shows `ZX Next: image at sector 0x…, sectors 0x…, extents 0x…, slot …`.
+- **QNICE assembly:** `ADD`/`ADDC` (and `SUB`/`SUBC`) pairs must be adjacent: any `ADD` in between,
+  even one that only forms a pointer, changes the carry flag (this bug once put the image 32 MB
+  too early). Test: `cd CORE/m2m-rom/test && ./run_test.sh` (QNICE emulator, FAT32 test images:
+  carry case, 3 extents, >512 extents, boot.vhd, no image).
+- **Ownership:** until "mounted", QNICE has both slots and the ZX Next is held in a hard reset
+  (`main.vhd`). From then on the core drives the slot that holds the image (mux in `mega65.vhd`,
+  framework outputs passed through the CORE by the patched board tops) and **QNICE must not touch
+  the SD card any more**: no file browser, no vdrives, no settings file (`SAVE_SETTINGS = false`).
+- **Sector engine** (`sd_image.vhd`): virtual sector N is found in the extent table (linear
+  search, a few µs), then read/written
+  with M2M's `sd_controller` (`sd_spi.vhd`, the Shell's own SD controller) at 28 MHz (14 MHz SPI).
+  Sectors beyond the image read as zeros and are not written. Three tries per sector, then the
+  sector is acknowledged anyway and counted (register 6 of `C_DEV_ZXN_IMG`).
+- **CPU wait:** the Z80N (and DMA) waits while a write is stored (as MiSTer), and while a
+  prefetched sector that nobody wants any more is still in flight. The latter is not in MiSTer: it
+  closes a race in `sd_card.sv` (CMD12 during a CMD18 prefetch, then CMD17/24) that corrupts
+  writes when the card is slow. `tb_sd_image.vhd` reproduces it.
+- **Simulate before touching it:** `cd CORE/sim && make sd`. It uses the ZX Next's real
+  `spi_master.vhd` and a behavioural SDHC card (CRC16, read latency, injected CRC errors).
 - `CORE.xdc` sets the SD pins as false paths (SPI is slow and source-synchronous).
 
 ### 3.4 Keyboard, joysticks, RTC, LEDs
@@ -172,16 +210,18 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SD + SDRAM routed t
 | `rtl/mister/bram.vhd` | `CORE/vhdl/zxnext/bram_xilinx.vhd` | Altera `altsyncram`/`altdpram` → inferable VHDL (same entities/ports). `.mif` init not supported |
 | `rtl/cpu/t80n.vhd` | `CORE/vhdl/zxnext/t80n.vhd` | 9-bit vs 4-bit mask length mismatch (`x"7"` → `"000000111"`) |
 | `rtl/mister/sdram.sv` | `CORE/vhdl/sdram_zxn.vhd` | VHDL translation for the MEGA65 SDRAM at 112 MHz (see §3.2) |
+| `sys/sd_card.sv` | `CORE/vhdl/sd_card_zxn.vhd` | VHDL translation (SDHC, 8-bit buffer, `zxnext.dpram`), plus `idle_o` for the CPU wait (see §3.3) |
 
-When bumping the submodule, diff these four upstream files against the version the replacement
+When bumping the submodule, diff these five upstream files against the version the replacement
 was made from and carry over any changes. The `.xpr` files list each MiSTer RTL file
 explicitly (library `zxnext`), so files that upstream adds or renames must be added by hand
 to **all four** `.xpr`s.
 
 **M2M framework** (V2.0.1): only `M2M/vhdl/top_mega65-r4.vhd`, `-r5.vhd`, `-r6.vhd` are changed.
 Each one (a) removes the SDRAM tie-offs, adds the DQ tri-state generate and routes all `sdram_*`
-pins to the CORE, and (b) disconnects both SD slots from the framework (`open` / `'1'`) and
-routes them to the CORE's new `sd_*`/`sd2_*` ports. Re-apply both when updating M2M. See
+pins to the CORE, and (b) routes the framework's SD outputs (`sd_reset/clk/mosi`, `sd2_*`) through
+the CORE's `fw_sd*_i` ports, which drives the pins (`sd_*`/`sd2_*` outputs); MISO and card detect
+go from the pins to the framework directly, MISO also to the CORE. Re-apply both when updating M2M. See
 `doc/m2m-v2.1.0-upgrade.md`.
 
 **QNICE:** none.
@@ -197,8 +237,8 @@ git submodule update --init                 # CORE/ZXNext_MiSTer and M2M/QNICE
 ( cd M2M/QNICE/tools && ./make-toolchain.sh )
 ( cd CORE/m2m-rom && ./make_rom.sh )
 
-# SDRAM controller simulation (GHDL)
-( cd CORE/sim && make )                     # make clean to reset
+# Simulations (GHDL): SDRAM controller and SD card image
+( cd CORE/sim && make )                     # or: make sdram / make sd; make clean to reset
 
 # Bitstream: open CORE/CORE-R6.xpr (or R4/R5) in Vivado 2026.1 →
 #   Run Synthesis → Run Implementation → Generate Bitstream
@@ -234,8 +274,9 @@ check_timing -verbose -file check_timing.rpt
   (Synth 8-5835). Known and fine: `t80n.vhd` `RegsH`/`RegsL` implemented in registers (8-4767).
 - If you can't run synthesis, say so; don't claim timing results.
 
-**Test on hardware with:** a FAT32 SD card that holds a ZX Next distribution (`TBBLUE.FW`,
-`TBBLUE.TBU`, `machines/`, `nextzxos/`, …) in the back slot or the bottom tray.
+**Test on hardware with:** the normal MEGA65 SD card (FAT32) with an image of a ZX Next SD card
+(e.g. MiSTer's `boot.vhd`, or a FAT32 image holding System/Next 24.11) copied to
+`/zxnext/boot.vhd` or `/zxnext/boot.img` (it may be fragmented, up to 512 pieces).
 
 ---
 
@@ -268,7 +309,8 @@ check_timing -verbose -file check_timing.rpt
   really waits that long.
 - `C_MENU_*` ↔ menu line coupling (§3.5). The main menu already uses all 13 lines of
   `OPTM_DY`; on M2M V2.1.0 an oversized menu is a fatal Shell error.
-- QNICE has no SD card (§3.3). Anything in the Shell that needs files will fail.
+- QNICE must not use the SD card after `PREP_START` (§3.3): the core drives it. Anything in the
+  Shell that needs files after startup (file browser, settings, vdrives) would collide with it.
 - The XDC uses hierarchical names; instance renames drop constraints silently.
 - `doc/temp/*` are upstream M2M scratch notes, not documentation of this core.
 - **HDMI "Zoom-in" uses M2M's `crop.vhd`, which is hard-coded for the C64 (320x200 picture

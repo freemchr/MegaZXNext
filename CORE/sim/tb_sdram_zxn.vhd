@@ -291,6 +291,24 @@ begin
          written(to_integer(unsigned(ad))) := '1';
       end procedure a_write;
 
+      -- A write as the Z80N does it at 28 MHz: WR goes low in T2, when WAIT is sampled, so the
+      -- write cannot stall the CPU itself, only an access that is still pending can. The next
+      -- access starts after gap cycles of CLK_28, possibly before the write has been served.
+      procedure a_write_posted(constant ad : in std_logic_vector(20 downto 0); constant wd : in std_logic_vector(7 downto 0);
+                               constant gap : in natural) is
+      begin
+         a_launch(ad, '1', wd, '1');
+         -- WAIT as sampled with the request (the controller has not seen this request yet)
+         while a_wait_cpu = '1' loop
+            wait on clk28;
+         end loop;
+         for i in 1 to gap loop
+            wait until rising_edge(clk28);
+         end loop;
+         ref(to_integer(unsigned(ad)))     := wd;
+         written(to_integer(unsigned(ad))) := '1';
+      end procedure a_write_posted;
+
       procedure a_check(constant ad : in std_logic_vector(20 downto 0)) is
          variable rd : std_logic_vector(7 downto 0);
       begin
@@ -392,6 +410,28 @@ begin
       for i in 0 to 63 loop
          a_check(alist(i));
       end loop;
+
+      -- 9) posted writes followed at once by a read (Z80N CALL at 28 MHz: push, push, fetch),
+      --    also while port B traffic and refresh delay the write
+      for i in 0 to C_NUM_RAND - 1 loop
+         if i mod 2 = 0 then
+            wait until rising_edge(clk28);
+            b_addr_s <= alist((i + 3) mod C_NUM_RAND);
+            b_req_s  <= not b_req_s;
+         end if;
+         addr := std_logic_vector(to_unsigned(16#1F000# + (i mod 64) * 2, 21));
+         a_write_posted(std_logic_vector(unsigned(addr) + 1), std_logic_vector(rnd(7 downto 0)), 1 + to_integer(rnd(1 downto 0)) mod 3);
+         a_write_posted(addr, std_logic_vector(rnd(7 downto 0)), 1 + to_integer(rnd(1 downto 0)) mod 3);
+         if i mod 3 = 0 then
+            a_check(addr);                                  -- read of the word just written
+         else
+            a_check(alist(i));                              -- read elsewhere (the opcode fetch)
+         end if;
+      end loop;
+      for i in 0 to 127 loop
+         a_check(std_logic_vector(to_unsigned(16#1F000# + i, 21)));
+      end loop;
+      report "posted writes done";
 
       -- 8) Layer 2 streaming under maximum CPU load
       for ad in C_L2_BASE to C_L2_BASE + C_L2_LINES * 256 - 1 loop

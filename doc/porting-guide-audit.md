@@ -81,6 +81,21 @@ including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins
 5. **[FIXED: lines reflowed to at most 43 characters]** **Help and welcome text is wider than the frame.** *Verified.*
    - The OSM is 720/16 = 45 columns and the frame takes 2, so at most 43 characters fit.
    - Too-long lines: `config.vhd:86` (44), `:87` (44), `:98` (45), `:106` (46), `:109` (44).
+5a. **M2M HyperRAM read path: hold slack is placement luck** (found 2026-10-12, not part of the
+   original audit).
+   - `hr_d_io[*]` → IDDR in `M2M/vhdl/controllers/hyperram/hyperram_rx.vhd`, clocked by RWDS through
+     a fixed IDELAY (20 taps) and then a **fabric-routed** net (fanout 36: 8 IDDRs and the RX
+     FIFO). The data path is fixed (IBUF → IDDR), so only the RWDS route decides the hold slack,
+     and its delay to the eight IDDRs differs by about 0.35 ns.
+   - Measured WHS on `hr_rwds`: +0.021, +0.053, +0.009 ns in earlier builds, **−0.128 ns** in the
+     first R6 build with the SD card image (3 bits). Setup slack on the same group is about
+     +0.34 ns. Upstream M2M (develop) has the same code and constraints.
+   - The core does not use the HyperRAM; M2M uses it for the HDMI frame buffer, so a failure would
+     show as HDMI picture errors.
+   - Options: re-run implementation until it passes (luck); override the IDELAY in `CORE.xdc`
+     (`set_property IDELAY_VALUE 18 [get_cells .../delay_rwds_inst]` moves the sample point about
+     0.16 ns earlier: by STA hold about +0.03 and setup about +0.18 ns for that placement, but it
+     changes M2M's tested sampling point); or a fix upstream. Not decided.
 
 ### B. Correctness
 

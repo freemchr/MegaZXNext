@@ -73,6 +73,13 @@ constant CHAR_MEM_SIZE        : natural := CHARS_DX * CHARS_DY;
 constant VRAM_ADDR_WIDTH      : natural := f_log2(CHAR_MEM_SIZE);
 
 ----------------------------------------------------------------------------------------------------------
+-- QNICE devices of the core (M2M$RAMROM_DEV)
+----------------------------------------------------------------------------------------------------------
+
+-- Position of the ZX Next's SD card image on the MEGA65's SD card (register map: mega65.vhd)
+constant C_DEV_ZXN_IMG        : std_logic_vector(15 downto 0) := x"0100";
+
+----------------------------------------------------------------------------------------------------------
 -- HyperRAM memory map (in units of 4kW)
 ----------------------------------------------------------------------------------------------------------
 
@@ -91,7 +98,8 @@ constant C_HMAP_M2M           : std_logic_vector(15 downto 0) := x"0000";     --
 -- Otherwise make sure that you wire C_VD_DEVICE in the qnice_ramrom_devices process and that you
 -- have as many appropriately sized RAM buffers for disk images as you have drives
 type vd_buf_array is array(natural range <>) of std_logic_vector;
--- The ZX Next accesses the SD card directly (SPI), therefore there are no virtual drives
+-- The ZX Next's SD card image is far too large for the vdrive buffers: sd_image.vhd serves it from the
+-- SD card directly, therefore there are no virtual drives
 constant C_VDNUM              : natural := 0;                                          -- amount of virtual drives; maximum is 15
 constant C_VD_DEVICE          : std_logic_vector(15 downto 0) := x"EEEE";              -- device number of vdrives.vhd device
 constant C_VD_BUFFER          : vd_buf_array := (  x"EEEE", x"EEEE");                  -- Always finish the array using x"EEEE"

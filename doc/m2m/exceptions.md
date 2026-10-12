@@ -10,7 +10,7 @@ MiSTer core ZXNext_MiSTer
 
 The submodule `CORE/ZXNext_MiSTer` points to
 https://github.com/MiSTer-devel/ZXNext_MISTer (commit `7daebd1`, 2026-09-28) and
-is **not modified**. There is no fork. Instead, four upstream files are left out
+is **not modified**. There is no fork. Instead, five upstream files are left out
 of the Vivado projects and replaced by files in `CORE/vhdl/`:
 
 | Upstream file (not in the `.xpr`) | Replacement                          |
@@ -19,13 +19,14 @@ of the Vivado projects and replaced by files in `CORE/vhdl/`:
 | `rtl/mister/bram.vhd`             | `CORE/vhdl/zxnext/bram_xilinx.vhd`    |
 | `rtl/cpu/t80n.vhd`                | `CORE/vhdl/zxnext/t80n.vhd`           |
 | `rtl/mister/sdram.sv`             | `CORE/vhdl/sdram_zxn.vhd`             |
+| `sys/sd_card.sv`                  | `CORE/vhdl/sd_card_zxn.vhd`           |
 
 All other ZX Next RTL is compiled from the submodule into the VHDL library
 `zxnext`. The `.xpr` files list every file explicitly.
 
 When you update the submodule:
 
-1. `git -C CORE/ZXNext_MiSTer diff 7daebd1 <new> -- <file>` for each of the four
+1. `git -C CORE/ZXNext_MiSTer diff 7daebd1 <new> -- <file>` for each of the five
    upstream files above, and carry the changes over to the replacement.
 2. Look for files that upstream added, removed or renamed in `rtl/`, and update
    the file lists of **all four** `CORE/CORE-R*.xpr` (library `zxnext`).
@@ -62,6 +63,14 @@ A VHDL translation, reworked for the MEGA65 SDRAM at 112 MHz. See the file
 header. It is not a drop-in translation any more: changes to `sdram.sv` have to
 be re-implemented by hand, then checked with `cd CORE/sim && make`.
 
+### `sys/sd_card.sv` → `sd_card_zxn.vhd`
+
+A line-by-line VHDL translation of MiSTer's virtual SPI SD card, fixed to SDHC,
+an 8-bit buffer interface (WIDE=0) and one clock. The buffer is `zxnext.dpram`.
+One addition: `idle_o`, used by `sd_image.vhd` for a CPU wait that closes a
+race of the original (see the `sd_image.vhd` header). Port upstream changes by
+hand, then run `cd CORE/sim && make sd`.
+
 MiSTer2MEGA65
 -------------
 
@@ -72,13 +81,16 @@ Framework version: V2.0.1. Only the three board top files are changed:
 1. **SDRAM:** remove the SDRAM tie-offs, add a generate with the DQ tri-state
    buffers (`sdram_dq_out`/`sdram_dq_oe_n`/`sdram_dq_in`), and connect all
    `sdram_*` pins to the CORE.
-2. **SD cards:** disconnect both SD slots from the framework (outputs `open`,
-   inputs `'1'`) and connect them to the CORE's `sd_*` and `sd2_*` ports. The
-   ZX Next owns both SD cards; QNICE has none.
+2. **SD cards:** the framework's SD outputs (`sd_reset_o`, `sd_clk_o`,
+   `sd_mosi_o`, `sd2_*`) go to the CORE's `fw_sd_*_i`/`fw_sd2_*_i` ports, and
+   the CORE drives the pins (`sd_*_o`/`sd2_*_o`): it passes the framework's
+   signals through, except for the slot that holds the ZX Next's SD card image
+   once the Shell has mounted it. MISO and card detect go from the pins to the
+   framework, MISO also to the CORE.
 3. A comment: "54 MHz" → "28 MHz".
 
 For this, `MEGA65_Core` (`CORE/vhdl/mega65.vhd`) has additional `sdram_*`,
-`sd_*` and `sd2_*` ports that the stock M2M entity does not have.
+`sd_*`, `sd2_*` and `fw_sd*` ports that the stock M2M entity does not have.
 
 When you update M2M, re-apply 1 and 2 to the new board tops (a three-way merge
 of the old stock file, the new stock file and our file works).
@@ -87,4 +99,7 @@ of the old stock file, the new stock file and our file works).
 QNICE
 -----
 
-No changes.
+No changes to QNICE or to `M2M/rom`. The core specific Shell code is in
+`CORE/m2m-rom/m2m-rom.asm`: `PREP_START` mounts the ZX Next's SD card image
+(`ZXN_MOUNT`), and the heap is 64 words smaller than in the template to make
+room for its variables.

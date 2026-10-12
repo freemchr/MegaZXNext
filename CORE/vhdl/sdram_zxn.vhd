@@ -161,6 +161,12 @@ architecture synthesis of sdram_zxn is
    signal old_b_req  : std_logic := '0';
    signal ch0_busy   : std_logic := '0';                          -- the access being started is for channel 0
    signal ch1_busy   : std_logic := '0';                          -- the access being started is for channel 1
+   -- A request that arrives while port A is busy (at 28 MHz the ZX Next does not wait on writes,
+   -- so the next request can follow before the write has been served): it is served next
+   signal a_queued   : std_logic := '0';
+   signal a_q_addr   : std_logic_vector(20 downto 0) := (others => '0');
+   signal a_q_rd_n   : std_logic := '1';
+   signal a_q_di     : std_logic_vector(7 downto 0) := (others => '0');
    signal a_inflight : std_logic := '0';                          -- a port A access is in flight
    signal ch1_fill   : std_logic := '0';                          -- channel 1 cache line is being filled
    signal store      : std_logic_vector(2 downto 0) := (others => '0'); -- valid & channel & half
@@ -256,13 +262,21 @@ begin
       variable even    : boolean;
       variable v_wait  : std_logic;
       variable v_do    : std_logic_vector(7 downto 0);
+      variable v_queue : boolean;
+      variable v_qaddr : std_logic_vector(20 downto 0);
+      variable v_qrd_n : std_logic;
+      variable v_qdi   : std_logic_vector(7 downto 0);
    begin
       if rising_edge(clk_i) then
          data_reg <= sdram_dq_in_i;
 
          -- next values of ram_a_wait / ram_a_do
-         v_wait := ram_a_wait;
-         v_do   := ram_a_do;
+         v_wait  := ram_a_wait;
+         v_do    := ram_a_do;
+         v_queue := a_queued = '1';
+         v_qaddr := a_q_addr;
+         v_qrd_n := a_q_rd_n;
+         v_qdi   := a_q_di;
 
          ---------------------------------------------------------------------------------
          -- CLK_28 phase: t28 changes after edge 0, t28_s takes it at edge 1, t28_d at edge 2
@@ -304,7 +318,20 @@ begin
 
          if even then
             a_req_e <= ram_a_req_i;
-            if a_req_e = '0' and ram_a_req_i = '1' then
+            if a_req_e = '0' and ram_a_req_i = '1' and ram_a_wait = '1' then
+               -- Port A is busy: queue the request, the CPU keeps waiting until it is served
+               -- pragma translate_off
+               assert a_queued = '0' report "sdram_zxn: port A request lost (queue full)" severity error;
+               -- pragma translate_on
+               v_queue  := true;
+               v_qaddr  := ram_a_addr_i;
+               v_qrd_n  := ram_a_rd_n_i;
+               v_qdi    := ram_a_di_i;
+               a_queued <= '1';
+               a_q_addr <= ram_a_addr_i;
+               a_q_rd_n <= ram_a_rd_n_i;
+               a_q_di   <= ram_a_di_i;
+            elsif a_req_e = '0' and ram_a_req_i = '1' then
                a_addr_r  <= ram_a_addr_i;
                a_rd_n_r  <= ram_a_rd_n_i;
                a_di_r    <= ram_a_di_i;
@@ -418,7 +445,24 @@ begin
             if dl_req = '0' then
                rfsh_cnt <= (others => '0');
             end if;
-            if dl_ch0 = '1' then
+            if dl_ch0 = '1' and v_queue then
+               -- Another request is queued: start it next, the CPU keeps waiting. Always fetch it
+               -- (the cache compare was not done for it).
+               a_inflight <= '0';
+               a_queued   <= '0';
+               a_addr_r   <= v_qaddr;
+               a_rd_n_r   <= v_qrd_n;
+               a_di_r     <= v_qdi;
+               a_fetch_r  <= '1';
+               if dl_req = '1' and dl_we = '0' then
+                  if dl_a(1) = '1' then
+                     last_data(0)(31 downto 16) <= data_reg;
+                  else
+                     last_data(0)(15 downto 0)  <= data_reg;
+                  end if;
+                  store <= "1" & "0" & not dl_a(1);
+               end if;
+            elsif dl_ch0 = '1' then
                v_wait     := '0';
                a_inflight <= '0';
                if dl_req = '1' then
@@ -462,6 +506,7 @@ begin
             ch0_busy   <= '0';
             ch1_busy   <= '0';
             a_inflight <= '0';
+            a_queued   <= '0';
             ch1_fill   <= '0';
             dl_cnt     <= 0;
             store      <= "000";

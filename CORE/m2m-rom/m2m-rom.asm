@@ -1,12 +1,16 @@
 ; ****************************************************************************
-; YOUR-PROJECT-NAME (GITHUB-REPO-SHORTNAME) QNICE ROM
+; ZX Spectrum Next for MEGA65 (MegaZXNext) QNICE ROM
 ;
 ; Main program that is used to build m2m-rom.rom by make-rom.sh.
-; The ROM is loaded by TODO-ADD-NAME-OF-VHDL-FILE-HERE.
+; The ROM is loaded by M2M/vhdl/QNICE/qnice.vhd.
 ;
 ; The execution starts at the label START_FIRMWARE.
 ;
-; done by YOURNAME in YEAR and licensed under GPL v3
+; Core specific: PREP_START finds the ZX Next SD card image on the MEGA65 SD
+; card and hands it to the core (see ZXN_MOUNT below and sd_image.vhd).
+;
+; MiSTer2MEGA65 done by sy2002 and MJoergen in 2022 and licensed under GPL v3
+; MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
 ; ****************************************************************************
 
 ; If the define RELEASE is defined, then the ROM will be a self-contained and
@@ -117,10 +121,13 @@ PREP_LOAD_IMAGE XOR     R8, R8                  ; no errors
 ; Output:
 ;   R8: 0=OK, else pointer to string with error message
 ;   R9: 0=OK, else error code
-PREP_START      INCRB
-                XOR     R8, R8
-                XOR     R9, R9
-                DECRB
+PREP_START      SYSCALL(enter, 1)
+                RSUB    ZXN_MOUNT, 1            ; mount the ZX Next SD image
+                MOVE    R8, @--SP               ; lift return codes over ...
+                MOVE    R9, @--SP               ; the "leave hump"
+                SYSCALL(leave, 1)
+                MOVE    @SP++, R9
+                MOVE    @SP++, R8
                 RET
 
 ; OSM_SEL_POST callback function:
@@ -180,12 +187,15 @@ CUSTOM_MSG      XOR     R8, R8
                 RET              
 
 ; ----------------------------------------------------------------------------
+; ZX Next SD card image: ZXN_MOUNT (also used by the emulator test in test/)
+; ----------------------------------------------------------------------------
+
+#include "zxn_mount.asm"
+
+; ----------------------------------------------------------------------------
 ; Core specific constants and strings
 ; ----------------------------------------------------------------------------
 
-; Add your core specific constants and strings here
-
-; This needs to be the last thing before the "Variables" sections starts
 END_OF_ROM      .DW 0
 
 ; ----------------------------------------------------------------------------
@@ -197,7 +207,13 @@ END_OF_ROM      .DW 0
 #endif
 
 ;
-; add your own variables here
+; ZX Next SD card image (see ZXN_MOUNT)
+ZXN_FH          .BLOCK  FAT32$FDH_STRUCT_SIZE   ; file handle of the image
+ZXN_LBA         .BLOCK  2                       ; first sector (low, high)
+ZXN_SECTORS     .BLOCK  2                       ; size in sectors (low, high)
+ZXN_NCLUS       .BLOCK  2                       ; clusters of the image (low, high)
+ZXN_SPC         .BLOCK  1                       ; sectors per cluster
+ZXN_NEXT        .BLOCK  1                       ; extents written so far
 ;
 
 ; M2M Shell variables (only include, if you included "shell.asm" above)
@@ -227,7 +243,10 @@ HEAP            .BLOCK 1
 ; it comes to folders with a lot of files
 #else
 
-HEAP_SIZE       .EQU 28672                      ; 29696 - 1024 = 28672
+; 64 words less than the template: room for the ZX Next variables above
+; (heap end = HEAP + HEAP_SIZE + MENU_HEAP_SIZE must stay below 0xFEE0 minus
+; STACK_SIZE and B_STACK_SIZE, i.e. below 0xF5E0)
+HEAP_SIZE       .EQU 28608                      ; 29632 - 1024 = 28608
 HEAP            .BLOCK 1
 
 ; The monitor variables use 22 words, round to 32 for being safe and subtract
