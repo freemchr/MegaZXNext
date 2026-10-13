@@ -79,6 +79,7 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 
 constant SCR_WELCOME : string :=
    "ZX Spectrum Next for MEGA65 V0.1\n" &
+   "Ported by Chris Freeman\n" &
    "based on ZXNext_MISTer\n\n" &
    "Powered by MiSTer2MEGA65 Version [WIP],\n" &
    "done by sy2002 and MJoergen in 2022\n\n" &
@@ -96,6 +97,9 @@ constant SCR_WELCOME : string :=
    "    F13               CPU speed\n" &
    "    Help              Options menu\n\n" &
    "Reset button: short = soft, long = hard\n\n" &
+   "Project and issue reports:\n" &
+   "github.com/freemchr/MegaZXNext\n" &
+   "github.com/freemchr/MegaZXNext/issues\n\n" &
    "\n    Press Space to continue.\n";
 
 constant HELP_1 : string :=
