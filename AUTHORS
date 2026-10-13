@@ -1,47 +1,54 @@
-YOUR PROJECT NAME for MEGA65 aka GITHUB REPO SHORT NAME
-=======================================================
+ZX Spectrum Next for MEGA65 aka MegaZXNext
+==========================================
 
-done in YEAR by YOUR NAME
+done in 2026 by Chris Freeman
 
-YOUR WEBSITE
-YOUR GITHUB SITE
+https://github.com/freemchr/MegaZXNext
 
-REPO SHORT NAME is licensed under the terms of GNU/GPL v3, for more information please read the file LICENSE
-Parts of REPO SHORT NAME are licensed under other Free-software licenses as described in the source code
+MegaZXNext is licensed under the terms of GNU/GPL v3, for more information please read the file LICENSE
+Parts of MegaZXNext are licensed under other Free-software licenses as described in the source code
 
-GITHUB REPO SHORT NAME:
------------------------
+MegaZXNext:
+-----------
 
-  GITHUB REPO SHORT NAME is a port of MISTER'S REPO SHORT NAME
+  MegaZXNext is a port of MiSTer's ZXNext_MiSTer
       done by the MiSTer Development Team
-      Original GitHub Repository: https://github.com/MiSTer-devel/MISTER-REPO-LINK
+      Original GitHub Repository: https://github.com/MiSTer-devel/ZXNext_MISTer
       Significant contributors:
-      * NAME THE MAIN
-      * CONTRIBUTORS
-      * ON MiSTer's SIDE
+      * Alexey Melnikov aka Sorgelig (MiSTer port: SDRAM, SD card image, RTC, top level)
 
-  MISTER'S REPO SHORT NAME is a port of MiST's MiST NAME/OTHER SOURCE IN CASE MiSTer ported it from MIST/OTHER SOURCE
-      done by the MiST Development Team
-      Original GitHub Repository: https://github.com/mist-devel/MIST-REPO-LINK OR OTHER SOURCE
+  ZXNext_MiSTer is a port of the ZX Spectrum Next FPGA core
+      done by the ZX Spectrum Next team
+      Original Repository: https://gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA
       Significant contributors:
-      * NAME THE MAIN
-      * CONTRIBUTORS
-      * ON MiST's SIDE (OR OTHER SOURCE)
+      * Alvin Albrecht
+      * Victor Trucco
+      * Fabio Belavenuto
+      * Charlie Ingley, Garry Lancaster, ACX (Z80N extensions)
+      * Daniel Wallner (T80 CPU core, the base of the Z80N)
 
-  LIST SOME MORE SIGNIFICANT / MAIN AUTHERS OF SUBMODULES
-  HAVE A LOOK AT THIS EXAMPLE HOW TO: https://github.com/sy2002/gbc4mega65/blob/master/AUTHORS
+  The ZX Spectrum Next firmware, ROMs and NextZXOS are not part of this core. They are loaded
+  from the user's ZX Next SD card image and are covered by their own licenses.
 
-Other than that and my own work, REPO SHORT NAME uses:
-------------------------------------------------------
+Other than that and my own work, MegaZXNext uses:
+-------------------------------------------------
 
-DO NOT FORGET TO CREDIT EVERYTHING YOU USE FROM OTHER PEOPLE HERE
-THE FOLLOWING LIST NEEDS ALWAYS TO BE PART OF YOUR LIST:
-  
   * MiSTer2MEGA65 by The MiSTer2MEGA65 Development Team
     https://github.com/sy2002/MiSTer2MEGA65
 
   * QNICE Co-Processor and System-on-a-Chip for file operations and on-screen-menu by The QNICE Development Team
     https://github.com/sy2002/QNICE-FPGA
+
+  * MiSTer's sd_card.sv (virtual SD card), translated to VHDL in sd_card_zxn.vhd,
+    done by Till Harbaum and Alexey Melnikov aka Sorgelig
+    https://github.com/MiSTer-devel/Template_MiSTer
+
+  * MiSTer's ZX Next sdram.sv, translated to VHDL in sdram_zxn.vhd, done by Alexey Melnikov
+    The I/O scheme of sdram_zxn.vhd follows Michael Jørgensen's MEGA65 SDRAM controller
+    https://github.com/MJoergen/SDRAM
+
+  * SDRAM simulation model (testbenches only, MIT license), done by Michael Jørgensen
+    https://github.com/MJoergen/SDRAM
 
   * Various MEGA65 drivers taken from the MEGA65 VHDL source by Paul Gardner-Stephen
     https://github.com/MEGA65/mega65-core

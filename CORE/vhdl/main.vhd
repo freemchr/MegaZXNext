@@ -91,18 +91,6 @@ entity main is
       img_ext_data_i          : in  std_logic_vector(63 downto 0);
       img_err_cnt_o           : out std_logic_vector(15 downto 0);
 
-      -- Debug: activity counters and status, latched every 2**22 cycles (about 150 ms), 10 words
-      dbg_o                   : out std_logic_vector(159 downto 0);
-      -- Debug: SPI sniffer on SD0: ring buffer of the last 1024 events: command bytes from the ZX
-      -- Next (MOSI /= 0xFF) with the byte the card returned, the 16 exchanges after each of them
-      -- (responses), and changes of CS0.
-      --    bits 7..0 MISO byte, 15..8 MOSI byte, 16 event is a CS0 change, 17 new CS0 value,
-      --    31..18 0, 47..32 time since the previous event in units of 256 cycles (saturating)
-      --    count: bits 9..0 next entry to be written (= oldest entry), bit 10 0
-      dbg_trace_addr_i        : in  std_logic_vector(9 downto 0);
-      dbg_trace_data_o        : out std_logic_vector(47 downto 0);
-      dbg_trace_count_o       : out std_logic_vector(10 downto 0);
-
       -- Physical SD card (mega65.vhd connects the slot that holds the image)
       sd_cs_n_o               : out std_logic;
       sd_sclk_o               : out std_logic;
@@ -211,30 +199,6 @@ architecture synthesis of main is
    signal cpu_wait            : std_logic;
    signal sd_sclk_d           : std_logic := '0';
 
-   -- Debug counters (see dbg_o)
-   signal dbg_period          : unsigned(21 downto 0) := (others => '0');
-   signal dbg_spi             : unsigned(15 downto 0) := (others => '0');
-   signal dbg_sectors         : unsigned(15 downto 0) := (others => '0');
-   signal dbg_ram_a           : unsigned(15 downto 0) := (others => '0');
-   signal dbg_vs              : unsigned(15 downto 0) := (others => '0');
-   signal dbg_wait            : unsigned(31 downto 0) := (others => '0');
-   signal dbg_ram_wait        : unsigned(31 downto 0) := (others => '0');
-   signal dbg_latches         : unsigned(15 downto 0) := (others => '0');
-   signal dbg_ram_a_req_d     : std_logic := '0';
-   signal dbg_vs_d            : std_logic := '1';
-   signal dbg_ack_d           : std_logic := '0';
-   signal dbg_sclk_d          : std_logic := '0';
-   signal dbg_hold            : std_logic_vector(159 downto 0) := (others => '0');
-   type dbg_trace_t is array (0 to 1023) of std_logic_vector(47 downto 0);
-   signal dbg_trace           : dbg_trace_t;
-   signal dbg_trace_ptr       : unsigned(9 downto 0) := (others => '0');
-   signal dbg_trace_delta     : unsigned(23 downto 0) := (others => '0');
-   signal dbg_spi_sclk_d      : std_logic := '0';
-   signal dbg_spi_cs_d        : std_logic := '1';
-   signal dbg_spi_bits        : unsigned(2 downto 0) := (others => '0');
-   signal dbg_spi_mosi        : std_logic_vector(7 downto 0) := (others => '1');
-   signal dbg_spi_miso        : std_logic_vector(7 downto 0) := (others => '1');
-   signal dbg_spi_follow      : unsigned(4 downto 0) := (others => '0');
    signal sd_act_cnt          : unsigned(21 downto 0) := (others => '0');
 
    -- first order DC blocker for the unsigned ZX Next audio
@@ -503,100 +467,6 @@ begin
 
    sd_miso  <= img_miso when sd_cs0_n = '0' else '1';
 
-   -- Debug: count activity over a period of 2**22 cycles, then latch it for QNICE
-   --    word 0: SPI clock edges with SD0 selected      word 1: sectors served (sd_ack pulses)
-   --    word 2: CPU memory requests to the SDRAM       word 3: vertical syncs
-   --    word 4: cycles with the CPU waiting (/64)       word 5: cycles with ram_a_wait (/64)
-   --    word 6: status: 0 img_enable, 1 reset_core, 2 hw_reset, 3 cpu_wait, 4 ram_a_wait,
-   --            5 img_cpu_wait, 6 sd_cs0_n, 7 sd_cs1_n, 8 img_active
-   --    word 7: number of latches (proves that the counters run)
-   --    word 8, 9: CPU memory address of the last SDRAM request (low, high)
-   dbg_proc : process (clk_main_i)
-   begin
-      if rising_edge(clk_main_i) then
-         dbg_period      <= dbg_period + 1;
-         dbg_ram_a_req_d <= ram_a_req;
-         dbg_vs_d        <= rgb_vs_n;
-         dbg_ack_d       <= img_active;
-         dbg_sclk_d      <= sd_sclk;
-         if sd_cs0_n = '0' and sd_sclk /= dbg_sclk_d then dbg_spi <= dbg_spi + 1; end if;
-         if img_active = '1' and dbg_ack_d = '0' then dbg_sectors <= dbg_sectors + 1; end if;
-         if ram_a_req /= dbg_ram_a_req_d then dbg_ram_a <= dbg_ram_a + 1; end if;
-         if rgb_vs_n = '0' and dbg_vs_d = '1' then dbg_vs <= dbg_vs + 1; end if;
-         if cpu_wait = '1' then dbg_wait <= dbg_wait + 1; end if;
-         if ram_a_wait = '1' then dbg_ram_wait <= dbg_ram_wait + 1; end if;
-         if dbg_period = 0 then
-            dbg_hold <= "00000000000" & ram_a_addr &
-                        std_logic_vector(dbg_latches) &
-                        "0000000" & img_active & sd_cs1_n & sd_cs0_n & img_cpu_wait & ram_a_wait &
-                        cpu_wait & hw_reset & reset_core & img_enable_i &
-                        std_logic_vector(dbg_ram_wait(21 downto 6)) & std_logic_vector(dbg_wait(21 downto 6)) &
-                        std_logic_vector(dbg_vs) & std_logic_vector(dbg_ram_a) &
-                        std_logic_vector(dbg_sectors) & std_logic_vector(dbg_spi);
-            dbg_latches  <= dbg_latches + 1;
-            dbg_spi      <= (others => '0');
-            dbg_sectors  <= (others => '0');
-            dbg_ram_a    <= (others => '0');
-            dbg_vs       <= (others => '0');
-            dbg_wait     <= (others => '0');
-            dbg_ram_wait <= (others => '0');
-         end if;
-      end if;
-   end process dbg_proc;
-
-   dbg_o <= dbg_hold;
-
-   dbg_trace_proc : process (clk_main_i)
-      variable v_mosi : std_logic_vector(7 downto 0);
-      variable v_miso : std_logic_vector(7 downto 0);
-      variable v_rec  : boolean;
-      variable v_cs   : std_logic;
-   begin
-      if rising_edge(clk_main_i) then
-         dbg_spi_sclk_d <= sd_sclk;
-         dbg_spi_cs_d   <= sd_cs0_n;
-         if dbg_trace_delta /= x"FFFFFF" then
-            dbg_trace_delta <= dbg_trace_delta + 1;
-         end if;
-
-         v_rec  := false;
-         v_cs   := '0';
-         v_mosi := dbg_spi_mosi;
-         v_miso := dbg_spi_miso;
-         if sd_cs0_n /= dbg_spi_cs_d then
-            dbg_spi_bits <= (others => '0');
-            v_rec := true;
-            v_cs  := '1';
-         elsif sd_cs0_n = '0' and sd_sclk = '1' and dbg_spi_sclk_d = '0' then
-            -- SPI mode 0: both lines are valid at the rising edge of SCK
-            v_mosi := dbg_spi_mosi(6 downto 0) & sd_mosi;
-            v_miso := dbg_spi_miso(6 downto 0) & sd_miso;
-            dbg_spi_mosi <= v_mosi;
-            dbg_spi_miso <= v_miso;
-            dbg_spi_bits <= dbg_spi_bits + 1;
-            if dbg_spi_bits = 7 then
-               if v_mosi /= x"FF" then
-                  v_rec := true;
-                  dbg_spi_follow <= to_unsigned(16, 5);
-               elsif dbg_spi_follow /= 0 then
-                  v_rec := true;
-                  dbg_spi_follow <= dbg_spi_follow - 1;
-               end if;
-            end if;
-         end if;
-
-         if v_rec then
-            dbg_trace(to_integer(dbg_trace_ptr)) <=
-               std_logic_vector(dbg_trace_delta(23 downto 8)) & "00000000000000" & sd_cs0_n & v_cs &
-               v_mosi & v_miso;
-            dbg_trace_ptr   <= dbg_trace_ptr + 1;
-            dbg_trace_delta <= (others => '0');
-         end if;
-         dbg_trace_data_o <= dbg_trace(to_integer(unsigned(dbg_trace_addr_i)));
-      end if;
-   end process dbg_trace_proc;
-
-   dbg_trace_count_o <= '0' & std_logic_vector(dbg_trace_ptr);
    cpu_wait <= ram_a_wait or img_cpu_wait;
 
    -- SD card activity (drive led): stays on for ~150 ms after the last clock edge

@@ -78,10 +78,10 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 -- window contains the amount of pages, so each zero-terminated string can be up to 4095 bytes = 4094 characters long.
 
 constant SCR_WELCOME : string :=
-   "ZX Spectrum Next for MEGA65 V0.1\n" &
+   "ZX Spectrum Next for MEGA65 V0.1 alpha\n" &
    "Ported by Chris Freeman\n" &
    "based on ZXNext_MISTer\n\n" &
-   "Powered by MiSTer2MEGA65 Version [WIP],\n" &
+   "Powered by MiSTer2MEGA65 V2.0.1,\n" &
    "done by sy2002 and MJoergen in 2022\n\n" &
    "The ZX Next boots from an image of its SD\n" &
    "card (e.g. the MiSTer boot.vhd) that is\n" &
@@ -103,14 +103,14 @@ constant SCR_WELCOME : string :=
    "\n    Press Space to continue.\n";
 
 constant HELP_1 : string :=
-   "\n ZX Spectrum Next for MEGA65 V0.1\n\n" &
+   "\n ZX Spectrum Next for MEGA65 V0.1 alpha\n\n" &
    " Port of ZXNext_MISTer (Alvin Albrecht,\n" &
    " Victor Trucco, Fabio Belavenuto, Sorgelig)\n" &
    " Powered by MiSTer2MEGA65\n\n" &
    " Requires a MEGA65 R4, R5 or R6: the\n" &
    " ZX Next's 2 MB of RAM live in the SDRAM.\n\n" &
    " SD card: an image of a ZX Next SD card\n" &
-   " on the MEGA65 SD card, contiguous, as\n" &
+   " on the MEGA65 SD card (FAT32) as\n" &
    " /zxnext/boot.vhd or /zxnext/boot.img\n\n" &
    " Cursor right to learn more.       (1 of 2)\n" &
    " Press Space to close the help screen.";
@@ -244,7 +244,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "ZX SPECTRUM NEXT V0.1";
+constant CORENAME          : string := "ZX SPECTRUM NEXT V0.1 ALPHA";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
@@ -305,13 +305,13 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 31;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 30;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
 constant OPTM_DX           : natural := 25;
-constant OPTM_DY           : natural := 13;
+constant OPTM_DY           : natural := 12;
 
 -- The line numbers of the menu items are used in mega65.vhd (C_MENU_*): keep them in sync
 constant OPTM_ITEMS        : string :=
@@ -340,21 +340,19 @@ constant OPTM_ITEMS        : string :=
    "\n"                      &    -- 22
    " Flip joystick ports\n"  &    -- 23
    " HDMI: CRT emulation\n"  &    -- 24
-   " HDMI: Zoom-in\n"        &    -- 25
-   " Audio improvements\n"   &    -- 26
-   "\n"                      &    -- 27
-   " About & Help\n"         &    -- 28
-   "\n"                      &    -- 29
-   " Close Menu\n";               -- 30
+   " Audio improvements\n"   &    -- 25
+   "\n"                      &    -- 26
+   " About & Help\n"         &    -- 27
+   "\n"                      &    -- 28
+   " Close Menu\n";               -- 29
 
 -- define your own constants here and choose meaningful names
 constant OPTM_G_HDMI       : integer := 1;
 constant OPTM_G_VGA        : integer := 2;
 constant OPTM_G_FLIP_JOYS  : integer := 3;
 constant OPTM_G_CRT        : integer := 4;
-constant OPTM_G_Zoom       : integer := 5;
-constant OPTM_G_Audio      : integer := 6;
-constant OPTM_G_About_Help : integer := 7;
+constant OPTM_G_Audio      : integer := 5;
+constant OPTM_G_About_Help : integer := 6;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -386,7 +384,6 @@ constant OPTM_GROUPS       : OPTM_GTYPE := ( OPTM_G_TEXT + OPTM_G_HEADLINE,     
                                              OPTM_G_LINE,                              -- Line
                                              OPTM_G_FLIP_JOYS + OPTM_G_SINGLESEL,      -- Flip joystick ports
                                              OPTM_G_CRT       + OPTM_G_SINGLESEL,      -- HDMI: CRT emulation
-                                             OPTM_G_Zoom      + OPTM_G_SINGLESEL,      -- HDMI: Zoom-in
                                              OPTM_G_Audio     + OPTM_G_SINGLESEL,      -- Audio improvements
                                              OPTM_G_LINE,                              -- Line
                                              OPTM_G_About_Help + OPTM_G_HELP,          -- About & Help

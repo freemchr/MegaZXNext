@@ -295,8 +295,7 @@ constant C_MENU_VGA_15KHZHSVS    : natural := 18;
 constant C_MENU_VGA_15KHZCS      : natural := 19;
 constant C_MENU_FLIP_JOYS        : natural := 23;
 constant C_MENU_CRT_EMULATION    : natural := 24;
-constant C_MENU_HDMI_ZOOM        : natural := 25;
-constant C_MENU_IMPROVE_AUDIO    : natural := 26;
+constant C_MENU_IMPROVE_AUDIO    : natural := 25;
 
 signal main_scandoubler       : std_logic;
 signal main_sd_active         : std_logic;
@@ -310,12 +309,6 @@ signal main_img_ext_count     : std_logic_vector(9 downto 0);
 signal main_img_ext_addr      : std_logic_vector(8 downto 0);
 signal main_img_ext_data      : std_logic_vector(63 downto 0);
 signal main_img_err_cnt       : std_logic_vector(15 downto 0);
-signal main_dbg               : std_logic_vector(159 downto 0);
-signal qnice_dbg              : std_logic_vector(159 downto 0);
-signal qnice_trace_addr       : std_logic_vector(9 downto 0) := (others => '0');
-signal main_trace_addr        : std_logic_vector(9 downto 0);
-signal main_trace             : std_logic_vector(58 downto 0);
-signal qnice_trace            : std_logic_vector(58 downto 0);
 signal main_own_back          : std_logic;
 signal main_own_tray          : std_logic;
 
@@ -520,10 +513,6 @@ begin
          img_ext_addr_o       => main_img_ext_addr,
          img_ext_data_i       => main_img_ext_data,
          img_err_cnt_o        => main_img_err_cnt,
-         dbg_o                => main_dbg,
-         dbg_trace_addr_i     => main_trace_addr,
-         dbg_trace_data_o     => main_trace(47 downto 0),
-         dbg_trace_count_o    => main_trace(58 downto 48),
 
          sd_cs_n_o            => main_sd_cs_n,
          sd_sclk_o            => main_sd_sclk,
@@ -607,7 +596,7 @@ begin
    qnice_dvi_o                <= '0';                                         -- 0=HDMI (with sound), 1=DVI (no sound)
    qnice_audio_mute_o         <= '0';                                         -- audio is not muted
    qnice_audio_filter_o       <= qnice_osm_control_i(C_MENU_IMPROVE_AUDIO);   -- 0 = raw audio, 1 = use filters from globals.vhd
-   qnice_zoom_crop_o          <= qnice_osm_control_i(C_MENU_HDMI_ZOOM);       -- 0 = no zoom/crop
+   qnice_zoom_crop_o          <= '0';   -- no zoom/crop: M2M's crop.vhd is made for the C64 picture
 
    -- VGA: "Standard VGA" (31 kHz, scandoubler on), "Retro 15 kHz with HSync and VSync", "Retro 15 kHz with CSync"
    qnice_scandoubler_o        <= not (qnice_osm_control_i(C_MENU_VGA_15KHZHSVS) or qnice_osm_control_i(C_MENU_VGA_15KHZCS));
@@ -646,7 +635,6 @@ begin
                when 4      => qnice_img_slot                       <= qnice_dev_data_i(0);
                when 5      => qnice_img_enable                     <= qnice_dev_data_i(0);
                when 7      => qnice_img_ext_count                  <= qnice_dev_data_i(9 downto 0);
-               when 16#30# => qnice_trace_addr                     <= qnice_dev_data_i(9 downto 0);
                when 16#10# => qnice_img_ext_stage(15 downto 0)     <= qnice_dev_data_i;
                when 16#11# => qnice_img_ext_stage(31 downto 16)    <= qnice_dev_data_i;
                when 16#12# => qnice_img_ext_stage(47 downto 32)    <= qnice_dev_data_i;
@@ -672,28 +660,6 @@ begin
          dst_data_o  => qnice_img_err_cnt
       ); -- i_cdc_img_err_cnt
 
-   -- Debug words (main.vhd dbg_o): registers 0x20 .. 0x29
-   i_cdc_dbg : entity work.cdc_stable
-      generic map (
-         G_DATA_SIZE => 160
-      )
-      port map (
-         src_clk_i   => main_clk,
-         src_data_i  => main_dbg,
-         dst_clk_i   => qnice_clk_i,
-         dst_data_o  => qnice_dbg
-      ); -- i_cdc_dbg
-
-   i_cdc_trace_addr : entity work.cdc_stable
-      generic map (G_DATA_SIZE => 10)
-      port map (src_clk_i => qnice_clk_i, src_data_i => qnice_trace_addr,
-                dst_clk_i => main_clk, dst_data_o => main_trace_addr);
-
-   i_cdc_trace : entity work.cdc_stable
-      generic map (G_DATA_SIZE => 59)
-      port map (src_clk_i => main_clk, src_data_i => main_trace,
-                dst_clk_i => qnice_clk_i, dst_data_o => qnice_trace);
-
    qnice_img_read_proc : process (all)
    begin
       qnice_dev_data_o <= x"EEEE";
@@ -705,21 +671,6 @@ begin
             when 5      => qnice_dev_data_o <= x"000" & "000" & qnice_img_enable;
             when 6      => qnice_dev_data_o <= qnice_img_err_cnt;
             when 7      => qnice_dev_data_o <= "000000" & qnice_img_ext_count;
-            when 16#30# => qnice_dev_data_o <= "000000" & qnice_trace_addr;
-            when 16#31# => qnice_dev_data_o <= qnice_trace(15 downto 0);
-            when 16#32# => qnice_dev_data_o <= qnice_trace(31 downto 16);
-            when 16#33# => qnice_dev_data_o <= qnice_trace(47 downto 32);
-            when 16#34# => qnice_dev_data_o <= "00000" & qnice_trace(58 downto 48);
-            when 16#20# => qnice_dev_data_o <= qnice_dbg(15 downto 0);
-            when 16#21# => qnice_dev_data_o <= qnice_dbg(31 downto 16);
-            when 16#22# => qnice_dev_data_o <= qnice_dbg(47 downto 32);
-            when 16#23# => qnice_dev_data_o <= qnice_dbg(63 downto 48);
-            when 16#24# => qnice_dev_data_o <= qnice_dbg(79 downto 64);
-            when 16#25# => qnice_dev_data_o <= qnice_dbg(95 downto 80);
-            when 16#26# => qnice_dev_data_o <= qnice_dbg(111 downto 96);
-            when 16#27# => qnice_dev_data_o <= qnice_dbg(127 downto 112);
-            when 16#28# => qnice_dev_data_o <= qnice_dbg(143 downto 128);
-            when 16#29# => qnice_dev_data_o <= qnice_dbg(159 downto 144);
             when others => null;
          end case;
       end if;

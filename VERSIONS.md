@@ -1,114 +1,43 @@
-Version 2.0.1 - February 22, 2025
-=================================
-
-Bug fixes
----------
-
-* Fixed the "jail bar" aka "bar code" HDMI issue that is technically a
-  HyperRAM issue. All cores based on V2.0.0 were affected; mostly on R6
-  devices but there is at least one known R3 occurance.
-
-  If you want to learn more about the phenomenon and the fix, then look at
-  this issue for the R6: https://github.com/MJoergen/C64MEGA65/issues/145
-  And at this for the R3: https://github.com/MJoergen/C64MEGA65/issues/166
-
-* R6 only: Joysticks in port #2 did not work. Due to a bug in the R5/R6
-  boards, the cartridge port needs to be enabled for joystick port 2 to work.
-  Special thanks to rjaremczak for this fix.
-
-* R3 only: Corrected constraint for p1hi_io[0] (cartridge port)
-
-
-Version 2.0.0 - June 28, 2024
-=============================
-
-Improvements
-------------
-
-* Added support for multiple MEGA65 models including the 2024 batches aka R6;
-  currently we support R3/R3A, R4, R5, R6
-
-* Added support for additional bi-directional Expansion Port signals
-
-* Increased robustness of HyperRAM
-
-* Support for the MEGA65's I2C architecture
-
-* Support for the MEGA65's real-time-clock
-
-* Two more 60Hz screen resolutions: 4:3 480p and 4:3 800x600 and one 59.94Hz
-  screen resolution: 3:2 480p. Implemented by a more elegant aka dynamic video
-  clock reprogramming.
-
-* Better HDMI compatibilty due to switching to the Tyto2 framework and due
-  to fixing an audio bug
-
-* More robust reset handling: Cores start in reset state and the firmware
-  is un-resetting the core when time is ripe
-
-* The power led indicates a long reset by switching to blue
-
-* Run/Stop now has a global "go back" semantic: It either closes an open
-  window (including help screens or file selectors) or it goes back one menu
-  level when the user is in a sub-menu.
-
-Bug fixes
----------
-
-* The "Audio improvements" feature only worked with analog audio (3.5mm jack)
-  but not with digital audio via HDMI
-
-* Fixed a crash in the file browser
-
-* Fixed missing ".." in folders created with certain macOS versions
-
-* Fixed Run/Stop propagation bug when closing the OSM
-
-* MEGA65's internal floppy drive kepts spinning when a floppy was inserted.
-
-Version 1.0.0 - June 21, 2023
-=============================
-
-Commodore 64 for MEGA65 version 5 is based on this version 1.0.0 of the
-MiSTer2MEGA65 framework.
-
-Version 0.9.1 - January 28, 2023
+Version 0.1 alpha - October 2026
 ================================
 
-Works with more HDMI monitors, frame grabbers, HDMI switches, etc.
+First test release of the ZX Spectrum Next for the MEGA65, for the MEGA65 **R6**.
+Based on ZXNext_MiSTer (ZX Next core 3.02.00, matches System/Next 24.11) and
+MiSTer2MEGA65 V2.0.1.
 
-MiSTer2MEGA65 was not compliant to section 4.2.7 of the HDMI specification
-version 1.4b: It did not assert the +5V power signal. Now it does assert the
-+5 power signal via the FPGA pin `ct_hpd`.
+Tested on an R6: NextZXOS boots from the SD card image, its menus, 48K BASIC and the
+Browser work, music plays, Warhawk Next and Nextoid run with keyboard control.
+R4 and R5 builds are untested.
 
-Version 0.9.0 - January 9, 2023
-===============================
+Features (implemented; not all of them tested yet)
+---------------------------------------------------
 
-After being in development since April 5, 2021 while being in a constant
-"alpha state" with continuous changes and refactorings, Version 0.9.0 is the
-**first stable version of the MiSTer2MEGA65 (M2M) framework**.
+* The ZX Next's SD card is an image file on the MEGA65's SD card: `/zxnext/boot.vhd` (e.g.
+  MiSTer's boot.vhd) or `/zxnext/boot.img`. The file may be fragmented (up to 512 pieces).
+* 2 MB of ZX Next RAM in the MEGA65's SDRAM (R4/R5/R6).
+* All CPU speeds: 3.5, 7, 14 and 28 MHz (F13 cycles them).
+* MEGA65 keyboard mapped to the ZX Next keyboard, including the Next's extra keys;
+  F3 50/60 Hz, F9 Multiface, F11 DivMMC NMI.
+* HDMI (720p, 576p, 640x480, 720x480, 800x600) and VGA (standard or 15 kHz retro),
+  HDMI CRT emulation, audio filters, joysticks in both ports (can be swapped).
+* Real-time clock from the MEGA65.
 
-The first production quality core that is based on M2M is the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65/tree/M2M-V0.9).
-Additionally there is a work-in-progress
-[Apple II core](https://github.com/lydon42/Apple-II_MEGA65/tree/progress)
-based on M2M. The main reason why we are currently using "Version 0.9"
-(0.9.x) for the M2M framework instead of "Version 1.0" is that there is not
-enough documentation available, yet. If you have a look at the
-[MiSTer2MEGA65 Wiki](https://github.com/sy2002/MiSTer2MEGA65/wiki)
-then you will notice, that there are many gaps in the documentation.
+Fixed during the bring-up (not in the MiSTer core)
+---------------------------------------------------
 
-This should not discourage you from using the MiSTer2MEGA65 framework right
-now to port MiSTer cores and other cores to the MEGA65. You can use the
-source code of the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65/tree/M2M-V0.9)
-as your "user's manual" and "reference handbook" for the M2M framework;
-additionally to the existing
-[Wiki pages](https://github.com/sy2002/MiSTer2MEGA65/wiki).
-For being able to actually use the C64 core's source code as your
-documentation of how to use the M2M framework, we added a tag called
-`M2M-V0.9` to the GitHub repository of the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65/tree/M2M-V0.9).
-The tag is necessary, because Version 4 of the C64 core was based on an
-earlier version of the M2M framwork and only from the tag `M2M-V0.9` on the
-C64 core is aligned with Version 0.9 of M2M.
+* A CPU speed change could lose the opcode fetch that straddled the switch. NextZXOS then
+  showed a black screen in 48K BASIC and the Browser. MiSTer's clock switch has the same
+  window; this core keeps the CPU clock still for a moment after every speed change.
+
+Known issues
+------------
+
+* R4 and R5 untested.
+* An occasional grey screen at boot (a reset helps); not seen since the CPU speed fix.
+* No mouse support.
+* The firmware's boot screen says "MiSTer Next".
+* Tape (.TAP) and +3 disk (.DSK) loading untested.
+* The options menu settings are not saved (the ZX Next owns the SD card while it runs).
+
+The MiSTer2MEGA65 framework changelog is at
+https://github.com/sy2002/MiSTer2MEGA65/blob/master/VERSIONS.md

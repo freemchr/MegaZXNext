@@ -1,64 +1,109 @@
-MiSTer2MEGA65
-=============
+ZX Spectrum Next for MEGA65
+===========================
 
-MiSTer2MEGA65 is a framework to simplify porting MiSTer cores to the MEGA65.
+A port of the [ZX Spectrum Next](https://www.specnext.com/) core to the
+[MEGA65](https://mega65.org/), based on the MiSTer core
+[ZXNext_MiSTer](https://github.com/MiSTer-devel/ZXNext_MISTer) and built on the
+[MiSTer2MEGA65](https://github.com/sy2002/MiSTer2MEGA65) framework.
 
-![Title Image](doc/wiki/assets/MiSTer2MEGA65-Title.png)
+The ZX Spectrum Next is an enhanced ZX Spectrum: a Z80N CPU at 3.5, 7, 14 or 28 MHz,
+Layer 2 bitmap graphics, tilemap, sprites, copper, DMA, three AY sound chips, DivMMC and
+Multiface, and 2 MB of RAM. It runs NextZXOS and the classic Spectrum 48K, 128K and +3 software.
 
-Learn more by
-[watching this YouTube video](https://youtu.be/9Ib7z64z9N4)
-and get started by reading the
-[MiSTer2MEGA65 Wiki](https://github.com/sy2002/MiSTer2MEGA65/wiki).
+Status: alpha, MEGA65 R6 only
+-----------------------------
 
-TL;DR
------
+**V0.1 alpha** has been tested on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and
+the Browser work, music plays, and Next games (Warhawk Next, Nextoid) run with keyboard
+control. Expect bugs, and please report them (see below).
 
-1. Scroll up and press the "Use this template" button to start a new
-   MiSTer2MEGA65 project. Then fork the MiSTer core you want to port
-   and make it a Git submodule of your newly created project.
+* **R4 and R5:** the core builds for them, but nobody has tested it on these boards yet. If you
+  have one, a test report is very welcome.
+* **R3 / R3A is not supported:** the ZX Next's RAM lives in the SDRAM, which the R3 does not have.
 
-2. Wrap the MiSTer core inside `CORE/vhdl/main.vhd` while
-   adjusting the clocks in `CORE/vhdl/clk.vhd`. Provide RAMs, ROMs and other
-   devices in `CORE/vhdl/mega65.vhd` and wire everything correctly.
+Requirements
+------------
 
-3. Configure your core's behavior, including how the start screen looks like,
-   what ROMs should be loaded (and where to), the abilities of the
-   <kbd>Help</kbd> menu and more in `CORE/vhdl/config.vhd` and in
-   `CORE/vhdl/globals.vhd`.
+* A MEGA65 R6 (R4/R5 untested, see above).
+* An SD card in the MEGA65 (FAT32) with an **image of a ZX Next SD card** on it. No ROMs or
+  system files are included in this core: the ZX Next loads its firmware, ROMs and NextZXOS
+  from that image, just like the real machine loads them from its SD card.
 
-**DONE** your core is ported to MEGA65! :-)
+Installation
+------------
 
-*Obviously, this is a shameless exaggeration of how easy it is to work with
-MiSTer2MEGA65, but you get the gist of it.*
+1. **The ZX Next SD card image.** Use one of:
+   * the `boot.vhd` of the MiSTer core (in the `releases` folder of
+     [ZXNext_MiSTer](https://github.com/MiSTer-devel/ZXNext_MISTer)), or
+   * an image file of a ZX Next SD card with the System/Next distribution (tested: 24.11).
 
-Getting started, detailed documentation and support
----------------------------------------------------
+   Copy it to the MEGA65's SD card as **`/zxnext/boot.vhd`** or **`/zxnext/boot.img`**. The
+   file does not need to be contiguous (up to 512 fragments are fine).
+2. **The core.** Flash the `.cor` file of the release into a core slot with the MEGA65's flash
+   menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
+3. Start the core. The welcome screen shows the most important keys; press Space and the
+   ZX Next boots.
 
-1. You might want to start your journey
-  [here](https://github.com/sy2002/MiSTer2MEGA65/wiki/1.-What-is-MiSTer2MEGA65)
-  and then follow the reading track that is pointed out in the
-  respective chapters.
+Keyboard
+--------
 
-2. Run through this tutorial: https://files.mega65.org?ar=898d573b-d30d-4438-8893-09455bd16400
+| MEGA65 key            | ZX Next                    |
+|-----------------------|----------------------------|
+| Shift                 | Caps Shift                 |
+| Ctrl, MEGA            | Symbol Shift               |
+| Alt                   | Extend Mode                |
+| Caps Lock             | Caps Lock                  |
+| No Scroll             | Graph                      |
+| Tab / Clr Home        | True Video / Inv Video     |
+| Esc, Run/Stop         | Break                      |
+| ← (left of 1)         | Edit                       |
+| Inst/Del              | Delete                     |
+| Cursor keys           | Cursor keys                |
+| `: + - * / = @ £ ^`   | the matching Symbol Shift combinations |
+| F3                    | 50 Hz / 60 Hz              |
+| F9                    | Multiface NMI              |
+| F11                   | DivMMC NMI (drive button)  |
+| F13                   | Next CPU speed (3.5 → 7 → 14 → 28 MHz) |
+| Help                  | Options menu               |
 
-3. Choose the MiSTer core you want to port here: https://mister-devel.github.io/MkDocs_MiSTer/
+The reset button: a short press is a soft reset, a long press a hard reset.
 
-4. Use [The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide) to do the actual work. The guide contains all steps "From Zero to Hero".
+Options menu
+------------
 
-Status of the framework
------------------------
+Press **Help** for the options menu: HDMI mode (720p, 576p, 640x480, 720x480, 800x600), VGA
+mode (standard or 15 kHz retro), flip joystick ports, HDMI CRT emulation, audio improvements,
+and the help pages. The settings are not saved: the ZX Next owns the SD card while it runs.
 
-**The MiSTer2MEGA (M2M) framework is stable and ready for being used.**
-The reference implementation of the M2M framework is the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65).
-Additionally there is already a decent amount of cores that are based on the M2M framework.
-Head to the [Alternate MEGA65 cores](https://cores.mega65.org) website to learn more.
+Known issues
+------------
 
-[The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide)
-is very comprehensive - if you miss something or have questions, contact us on Discord.
+* Only tested on R6. R4/R5 are untested.
+* Now and then the core stops at a grey screen during boot. A reset (or switching off and on)
+  gets it going. Not seen since the CPU speed fix in V0.1, but not proven gone.
+* No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
+* The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
+  machine ID the core reports).
+* Tape files (.TAP) and +3 disk images (.DSK) have not been tested yet.
 
-The [Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65) is the reference implementation
-of the M2M framework and [The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide) uses it heavily to provide you with examples. Don't hesitate to take code snippets from the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65) for your own projects.
-nd join the
-[friendly MEGA65 community on Discord](https://discord.com/channels/719326990221574164/1177364456896999485).
+Reporting issues
+----------------
+
+Please open an issue at https://github.com/freemchr/MegaZXNext/issues with your MEGA65 board
+revision (R4/R5/R6), the image you use, and what you did.
+
+Building
+--------
+
+See [AGENTS.md](AGENTS.md) for the layout of the repository, how to build the bitstream with
+Vivado and how to run the simulations.
+
+Credits and license
+-------------------
+
+ZX Spectrum Next core by Alvin Albrecht, Victor Trucco and Fabio Belavenuto; MiSTer port by
+Sorgelig and the MiSTer team; MiSTer2MEGA65 by sy2002 and MJoergen. MEGA65 port by Chris
+Freeman. See [AUTHORS](AUTHORS) for everything this core uses.
+
+The core is licensed under the GNU GPL v3 (see [LICENSE](LICENSE)). Parts of it are licensed
+under other free software licenses, as stated in the source files.

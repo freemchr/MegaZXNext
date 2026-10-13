@@ -31,8 +31,6 @@ on the task, not on rediscovering the layout.
   Open: an intermittent grey screen at boot (not seen since the CPU speed fix in §3.1, not proven gone).
   Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
   on R6; R4/R5 are untested and need outside testers before they are called working.
-- **Debug logic:** `main.vhd`/`mega65.vhd` still contain bring-up instrumentation (`dbg_*`,
-  `C_DEV_ZXN_IMG` registers 0x20..0x34). Remove it before a release.
 
 ### Target boards
 
@@ -49,9 +47,9 @@ MEGA65 R4, R5 or R6".
 ```
 /
 ├── AGENTS.md  CLAUDE.md    this guide (CLAUDE.md imports it)
-├── README.md               ⚠ still the stock M2M README (see §8)
-├── AUTHORS                 ⚠ still the M2M credit template (see §8)
-├── VERSIONS.md             ⚠ still the M2M framework changelog (see §8)
+├── README.md               user documentation: installation, keys, known issues
+├── AUTHORS                 credits for everything the core uses
+├── VERSIONS.md             this core's changelog (M2M's own is upstream)
 ├── M2M/                    the MiSTer2MEGA65 framework, V2.0.1. Read-only EXCEPT the
 │                           three board tops listed in §4. M2M/QNICE = QNICE submodule.
 ├── CORE/
@@ -62,7 +60,7 @@ MEGA65 R4, R5 or R6".
 │   │   ├── main.vhd        core clock domain: zxnext_top_m65 + sdram_zxn + rtc + audio/video glue
 │   │   ├── clk.vhd         MMCM: 28 / 28∠180° / 14 / 7 / 112 MHz
 │   │   ├── globals.vhd     CORE_CLK_SPEED = 28 MHz, VGA_DX/DY = 720×576, no vdrives, no ROMs
-│   │   ├── config.vhd      OSM menu (31 lines), welcome screen, 2 help pages
+│   │   ├── config.vhd      OSM menu (30 lines), welcome screen, 2 help pages
 │   │   ├── keyboard.vhd    MEGA65 keyboard → ZX Next 8×7 membrane matrix
 │   │   ├── sdram_zxn.vhd   SDRAM controller (VHDL translation of MiSTer rtl/mister/sdram.sv)
 │   │   ├── sd_image.vhd    the ZX Next's SD card = image file on the MEGA65 card (sector engine)
@@ -199,9 +197,11 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
 
 ### 3.5 OSM menu (`config.vhd` ↔ `mega65.vhd`)
 
-- 31 lines (`OPTM_SIZE = 31`): HDMI submenu (lines 2–13), VGA submenu (14–21), Flip joysticks
-  (23), HDMI CRT emulation (24), HDMI Zoom-in (25), Audio improvements (26), About & Help (28),
-  Close (30). Main menu shows 13 lines with `OPTM_DY = 13`.
+- 30 lines (`OPTM_SIZE = 30`): HDMI submenu (lines 2–13), VGA submenu (14–21), Flip joysticks
+  (23), HDMI CRT emulation (24), Audio improvements (25), About & Help (27), Close (29). Main menu
+  shows 12 lines with `OPTM_DY = 12`. There is no HDMI Zoom-in item: M2M's `crop.vhd` is
+  hard-coded for the C64 picture (320x200 behind 33/35 pixel borders), so `qnice_zoom_crop_o` is
+  tied to '0'. A ZX Next zoom would need its own crop in the core.
 - **Bit N of the OSM control vector = menu line N = `C_MENU_*` in `mega65.vhd:279-292`.**
   Inserting or deleting a line silently shifts every later index. Re-sync `C_MENU_*` and keep
   `OPTM_SIZE` = number of lines in `OPTM_ITEMS` = number of entries in `OPTM_GROUPS`.
@@ -315,17 +315,14 @@ check_timing -verbose -file check_timing.rpt
   on another edge breaks them silently: STA still passes. The testbench catches it (garbage
   inputs, odd-edge output check). Renaming the Port A registers (or `last_data`, whose clock
   enable sees `ram_a_req_i` only through the even-edge queue branch) drops the `main_clk`
-  multicycle (it filters by cell name). Don't add more multicycles without proving the capture register
-  really waits that long.
-- `C_MENU_*` ↔ menu line coupling (§3.5). The main menu already uses all 13 lines of
-  `OPTM_DY`; on M2M V2.1.0 an oversized menu is a fatal Shell error.
+  multicycle (it filters by cell name). Don't add more multicycles without proving the capture
+  register really waits that long.
+- `C_MENU_*` ↔ menu line coupling (§3.5). The main menu uses all 12 lines of `OPTM_DY`; on
+  M2M V2.1.0 an oversized menu is a fatal Shell error.
 - QNICE must not use the SD card after `PREP_START` (§3.3): the core drives it. Anything in the
   Shell that needs files after startup (file browser, settings, vdrives) would collide with it.
 - The XDC uses hierarchical names; instance renames drop constraints silently.
 - `doc/temp/*` are upstream M2M scratch notes, not documentation of this core.
-- **HDMI "Zoom-in" uses M2M's `crop.vhd`, which is hard-coded for the C64 (320x200 picture
-  behind 33/35 pixel borders).** On the ZX Next's 720-pixel raster it crops the wrong window.
-  Either crop in the core or remove the menu item.
 - Vivado 2026.1 has mis-synthesized VHDL procedures that write process variables implicitly (seen
   in another port). Pass variables as explicit `inout` parameters; if hardware and simulation
   disagree, suspect synthesis.
@@ -334,11 +331,14 @@ check_timing -verbose -file check_timing.rpt
 
 ## 8. Open items
 
-The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. Highest
-priority: hardware bring-up on R6 (the only board available for testing; R4/R5 are build-only),
-then the SDRAM I/O constraints (audit item 3). Release hygiene that is still on the template:
-`README.md`, `AUTHORS`, `VERSIONS.md`, the `CORE/m2m-rom/m2m-rom.asm` header, and
-"Version [WIP]" in the welcome screen.
+The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V0.1 alpha
+(R6 only) is the current target; its known issues are listed in `README.md` and `VERSIONS.md`.
+Next: more hardware tests on R6 (tape/disk images, joysticks, VGA, function keys), the grey
+screen at boot if it comes back, R4/R5 testers, then the SDRAM I/O constraints (audit item 3).
+Requested by the maintainer: a "MEGA65 Next" boot screen with the logo in
+`doc/assets/mega65-logo.png` instead of the firmware's "MiSTer Next" (the firmware picks that text
+by the machine ID 0xDA; not in our code). Keep the version in `config.vhd` (welcome screen,
+HELP_1, `CORENAME`) and `VERSIONS.md` in sync.
 
 ## 9. Lessons from other M2M ports
 
