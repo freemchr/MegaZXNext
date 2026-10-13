@@ -10,10 +10,10 @@ Things that most often trip up work here:
   tops (R4/R5/R6) that route SDRAM and the SD slots to the core (AGENTS.md §4).
 - The ZX Next's SD card is an **image file** on the MEGA65 card; after startup the core drives the
   card and QNICE must not touch it (AGENTS.md §3.3).
-- Run the GHDL testbenches (`cd CORE/sim && make`) after any change to `sdram_zxn.vhd`,
-  `sd_image.vhd` or `sd_card_zxn.vhd`.
-- Only partly tested on hardware (R6: NextZXOS boots, Browser hangs). Don't describe behavior as
-  verified unless it was run on a MEGA65.
+- Run the GHDL testbenches (`cd CORE/sim && make`) after any change to `zxnext_top_m65.vhd` (CPU
+  clock), `sdram_zxn.vhd`, `sd_image.vhd` or `sd_card_zxn.vhd`.
+- Only partly tested on hardware (R6: NextZXOS, 48K BASIC and the Browser work). Don't describe
+  behavior as verified unless it was run on a MEGA65.
 
 ## M2M porting lessons
 

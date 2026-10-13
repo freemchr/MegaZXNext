@@ -3,6 +3,8 @@
 #    make            run all testbenches
 #    make sdram      sdram_zxn.vhd (SDRAM controller)
 #    make sd         sd_image.vhd (SD card image: virtual SD card + physical card access)
+#    make speed      CPU speed changes: ZX Next + sdram_zxn + SDRAM model, test boot ROM
+#    make boot       the ZX Next from reset with an ideal memory (not part of make)
 #    make GHDL=...   use a specific GHDL binary
 #
 # sdram_model.vhd and sdram_model_ram.vhd: SDRAM simulation model by MJoergen
@@ -16,8 +18,8 @@ SDRAM_SRCS := ../vhdl/sdram_zxn.vhd sdram_model_ram.vhd sdram_model.vhd tb_sdram
 SD_SRCS    := ../ZXNext_MiSTer/rtl/serial/spi_master.vhd $(WORK)/sd_spi_sim.vhd \
               ../vhdl/sd_card_zxn.vhd ../vhdl/sd_image.vhd tb_sd_image.vhd
 
-.PHONY: sim sdram sd boot clean
-sim: sdram sd
+.PHONY: sim sdram sd speed boot clean
+sim: sdram sd speed
 
 sdram:
 	mkdir -p $(WORK)
@@ -53,6 +55,22 @@ boot:
 	$(GHDL) -a $(STD) --workdir=$(WORK) -P$(WORK) tb_zxnext_boot.vhd
 	$(GHDL) -e $(STD) --workdir=$(WORK) -P$(WORK) tb_zxnext_boot
 	$(GHDL) -r $(STD) --workdir=$(WORK) -P$(WORK) tb_zxnext_boot --assert-level=error --ieee-asserts=disable
+
+# The ZX Next with sdram_zxn and the SDRAM model, the boot ROM replaced by the test program of
+# mk_cpu_speed_rom.py (lowers the CPU speed at different phases; no opcode fetch may get lost)
+speed:
+	mkdir -p $(WORK)
+	sed 's/std_logic_vector(to_unsigned(-1,stored.length-1))/(stored\x27length-2 downto 0 => \x271\x27)/' \
+	   ../ZXNext_MiSTer/rtl/serial/fifop.vhd > $(WORK)/fifop_sim.vhd
+	grep -q "downto 0 => '1')" $(WORK)/fifop_sim.vhd
+	python3 mk_cpu_speed_rom.py $(WORK)/bootrom_cpu_speed.vhd
+	$(GHDL) -a $(STD) --workdir=$(WORK) --work=unisim unisim_sim.vhd
+	$(GHDL) -i $(STD) --workdir=$(WORK) --work=zxnext $(filter-out %/fifop.vhd %/bootrom.vhd,$(ZXNEXT_SRCS)) \
+	   $(WORK)/fifop_sim.vhd $(WORK)/bootrom_cpu_speed.vhd
+	$(GHDL) -m $(STD) --workdir=$(WORK) -P$(WORK) --work=zxnext zxnext_top_m65
+	$(GHDL) -a $(STD) --workdir=$(WORK) -P$(WORK) ../vhdl/sdram_zxn.vhd sdram_model_ram.vhd sdram_model.vhd tb_cpu_speed.vhd
+	$(GHDL) -e $(STD) --workdir=$(WORK) -P$(WORK) tb_cpu_speed
+	$(GHDL) -r $(STD) --workdir=$(WORK) -P$(WORK) tb_cpu_speed --assert-level=error --ieee-asserts=disable
 
 clean:
 	rm -rf $(WORK) *.cf *.ghw

@@ -45,7 +45,9 @@ set_multicycle_path -from [get_clocks {cpu_clk_div cpu_clk_28}] -to [get_clocks 
 
 ## The same for the port A signals that come from main_clk (rising and falling edge) logic.
 ## Only the port A registers: port B (Layer 2) samples its main_clk inputs on every edge.
-set sdram_port_a [get_cells -hierarchical -filter {NAME =~ CORE/i_main/i_sdram/* && (NAME =~ */a_req_e_reg* || NAME =~ */a_addr_r_reg* || NAME =~ */a_rd_n_r_reg* || NAME =~ */a_di_r_reg* || NAME =~ */a_fetch_r_reg* || NAME =~ */a_queued_reg* || NAME =~ */a_q_addr_reg* || NAME =~ */a_q_rd_n_reg* || NAME =~ */a_q_di_reg* || NAME =~ */ram_a_wait_reg* || NAME =~ */ram_a_do_reg* || NAME =~ */a_wait_o_reg* || NAME =~ */a_do_o_reg*)}]
+## last_data: its clock enable sees ram_a_req_i only through the request queue branch, which is
+## evaluated on even edges only (its data comes from registers).
+set sdram_port_a [get_cells -hierarchical -filter {NAME =~ CORE/i_main/i_sdram/* && (NAME =~ */a_req_e_reg* || NAME =~ */a_addr_r_reg* || NAME =~ */a_rd_n_r_reg* || NAME =~ */a_di_r_reg* || NAME =~ */a_fetch_r_reg* || NAME =~ */a_queued_reg* || NAME =~ */a_q_addr_reg* || NAME =~ */a_q_rd_n_reg* || NAME =~ */a_q_di_reg* || NAME =~ */ram_a_wait_reg* || NAME =~ */ram_a_do_reg* || NAME =~ */a_wait_o_reg* || NAME =~ */a_do_o_reg* || NAME =~ */last_data_reg*)}]
 set_multicycle_path -from [get_clocks {main_clk main_clk_n}] -to $sdram_port_a -setup 2
 set_multicycle_path -from [get_clocks {main_clk main_clk_n}] -to $sdram_port_a -hold 1
 

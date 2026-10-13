@@ -27,7 +27,8 @@ on the task, not on rediscovering the layout.
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
   three top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
 - **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **R6 bring-up in
-  progress:** NextZXOS boots from `/zxnext/boot.img` and its menus work; the Browser hangs (open).
+  progress:** NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC and the Browser work.
+  Open: an intermittent grey screen at boot (not seen since the CPU speed fix in §3.1, not proven gone).
   Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
   on R6; R4/R5 are untested and need outside testers before they are called working.
 - **Debug logic:** `main.vhd`/`mega65.vhd` still contain bring-up instrumentation (`dbg_*`,
@@ -113,6 +114,14 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
   switches to 28 MHz via a **`BUFGMUX_CTRL`** (`zxnext_top_m65.vhd`; MiSTer used a fabric clock
   mux). `CORE.xdc` declares `cpu_clk_i0`, `cpu_clk_div`, `cpu_clk_28` as generated clocks, with
   `cpu_clk_div`/`cpu_clk_28` physically exclusive. Multicycle paths mirror MiSTer's `ZXNext.sdc`.
+- **CPU speed changes:** the ZX Next sizes a memory cycle by its new speed at once
+  (`memcycle_count_max`, the 28 MHz wait state), but the cycle that straddles the switch began at
+  the old speed. MiSTer's mux (and ours at first) could end that opcode fetch before its memory
+  request went out: on R6 NextZXOS lost an `INC HL` after its `OUT` to nextreg 0x07, the ULA clip
+  window got garbage, 48K BASIC and the Browser showed a black screen. `zxnext_top_m65.vhd` therefore
+  switches the BUFGMUX from `zxn_cpu_speed` (not the delayed `zxn_cpu_speed2`) and keeps `CLK_i0`
+  from rising for 15 CLK_28 cycles after a speed change. `make speed` in `CORE/sim` tests it (48
+  speed drops at different phases); run it after touching the CPU clock.
   **These XDC lines name hierarchical cells (`CORE/i_main/i_zxnext_top/...`, `CORE/i_main/i_sdram/*`);
   renaming an instance silently drops the constraint.** Check the Vivado critical warnings after
   any rename.
@@ -206,7 +215,7 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
 
 | Upstream file | Replacement | Why |
 | --- | --- | --- |
-| `rtl/mister/zxnext_top.vhd` | `CORE/vhdl/zxnext/zxnext_top_m65.vhd` | No PS/2; membrane driven directly; BUFGMUX_CTRL CPU clock; real 180° clock |
+| `rtl/mister/zxnext_top.vhd` | `CORE/vhdl/zxnext/zxnext_top_m65.vhd` | No PS/2; membrane driven directly; BUFGMUX_CTRL CPU clock with a settle time after speed changes; real 180° clock |
 | `rtl/mister/bram.vhd` | `CORE/vhdl/zxnext/bram_xilinx.vhd` | Altera `altsyncram`/`altdpram` → inferable VHDL (same entities/ports). `.mif` init not supported |
 | `rtl/cpu/t80n.vhd` | `CORE/vhdl/zxnext/t80n.vhd` | 9-bit vs 4-bit mask length mismatch (`x"7"` → `"000000111"`) |
 | `rtl/mister/sdram.sv` | `CORE/vhdl/sdram_zxn.vhd` | VHDL translation for the MEGA65 SDRAM at 112 MHz (see §3.2) |
@@ -238,7 +247,7 @@ git submodule update --init                 # CORE/ZXNext_MiSTer and M2M/QNICE
 ( cd CORE/m2m-rom && ./make_rom.sh )
 
 # Simulations (GHDL): SDRAM controller and SD card image
-( cd CORE/sim && make )                     # or: make sdram / make sd; make clean to reset
+( cd CORE/sim && make )                     # or: make sdram / make sd / make speed; make clean to reset
 
 # Bitstream: open CORE/CORE-R6.xpr (or R4/R5) in Vivado 2026.1 →
 #   Run Synthesis → Run Implementation → Generate Bitstream
@@ -304,8 +313,9 @@ check_timing -verbose -file check_timing.rpt
   and the `main_clk`→Port A multicycle are only correct because Port A samples and updates on
   even edges only (§3.2). Anything in `sdram_zxn` that reads `ram_a_*_i` or drives `ram_a_*_o`
   on another edge breaks them silently: STA still passes. The testbench catches it (garbage
-  inputs, odd-edge output check). Renaming the Port A registers drops the `main_clk` multicycle
-  (it filters by cell name). Don't add more multicycles without proving the capture register
+  inputs, odd-edge output check). Renaming the Port A registers (or `last_data`, whose clock
+  enable sees `ram_a_req_i` only through the even-edge queue branch) drops the `main_clk`
+  multicycle (it filters by cell name). Don't add more multicycles without proving the capture register
   really waits that long.
 - `C_MENU_*` ↔ menu line coupling (§3.5). The main menu already uses all 13 lines of
   `OPTM_DY`; on M2M V2.1.0 an oversized menu is a fatal Shell error.

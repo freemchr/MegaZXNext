@@ -42,6 +42,10 @@ The MEGA65 top level of the ZX Next (entity `zxnext_top_m65`). Changes:
 * CPU clock: a `BUFGMUX_CTRL` switches between the register driven clock
   `CLK_i0` (3.5/7/14 MHz) and `CLK_28` instead of MiSTer's fabric clock mux.
   `CORE/CORE.xdc` names `CLK_i0_reg` and `i_bufgmux_cpu`: keep these names.
+* CPU speed changes: the BUFGMUX select follows `zxn_cpu_speed` directly, and
+  `CLK_i0` does not rise for 15 `CLK_28` cycles after a speed change, so the
+  memory cycle that straddles the switch gets its full time (MiSTer's mux can
+  lose that opcode fetch). Test: `cd CORE/sim && make speed`.
 * `CLK_28_n` is the MMCM's 180 degree output instead of an inverter.
 
 ### `rtl/mister/bram.vhd` → `bram_xilinx.vhd`

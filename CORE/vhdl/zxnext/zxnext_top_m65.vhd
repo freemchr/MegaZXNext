@@ -16,6 +16,10 @@
 --      of fabric logic. On Xilinx we use a BUFGMUX_CTRL instead, which does the
 --      glitch-free switch-over in hardware and keeps the clock on the global
 --      clock network.
+--    * CPU speed changes: the clock select follows the new speed at once, and
+--      CLK_i0 does not rise for 15 CLK_28 cycles after a speed change, so the
+--      memory cycle that straddles the switch gets its full time (MiSTer can
+--      lose that opcode fetch; see the CPU clock process).
 --    * CLK_28_n is a real 180 degree phase shifted clock from the MMCM instead
 --      of an inverter in the fabric.
 --
@@ -147,6 +151,8 @@ architecture rtl of zxnext_top_m65 is
    signal zxn_clock_lsb          : std_logic;
    signal zxn_cpu_speed          : std_logic_vector(1 downto 0);
    signal zxn_cpu_speed2         : std_logic_vector(1 downto 0) := "00";
+   signal cpu_speed_d            : std_logic_vector(1 downto 0) := "00";
+   signal cpu_settle             : unsigned(3 downto 0) := (others => '0');
 
    -- serial communication
 
@@ -212,33 +218,55 @@ begin
    CPU_SPEED <= zxn_cpu_speed2;
 
    -- CPU clock generation for 3.5 MHz (incl. contention), 7 MHz and 14 MHz.
-   -- Identical to the MiSTer version: CLK_i0 is a register driven clock.
+   -- As in MiSTer, CLK_i0 is a register driven clock. Unlike MiSTer, CLK_i0 may not rise for 15
+   -- CLK_28 cycles after a speed change (cpu_settle). The ZX Next sizes a memory cycle by its new
+   -- speed at once (memcycle_count_max: the request goes out 7 CLK_28 cycles after MREQ at 3.5 MHz),
+   -- but the cycle that straddles the switch began at the old speed: from 28 MHz, T1 and T2 run at
+   -- 28 MHz and T3 comes with the first CLK_i0 edge, which can be only a few cycles later. The CPU
+   -- then takes the opcode before it was requested from memory. On R6 NextZXOS lost the INC HL after
+   -- its OUT to nextreg 0x07 that way, the ULA clip window got garbage and the screen went black.
+   -- The stretch gives the straddling cycle at least one full 3.5 MHz T-state.
    process (CLK_28)
+      variable clk_i0_v : std_logic;
    begin
       if rising_edge(CLK_28) then
+         clk_i0_v := CLK_i0;
          case zxn_cpu_speed2 is
             when "00"   =>
                if clk_28_div(1 downto 0) = "00" then
                   if zxn_clock_lsb = '1' and zxn_clock_contend = '0' then
-                     CLK_i0 <= '0';
+                     clk_i0_v := '0';
                   elsif zxn_clock_lsb = '0' then
-                     CLK_i0 <= '1';
+                     clk_i0_v := '1';
                   end if;
                end if;
 
             when "01"   =>
-               CLK_i0 <= clk_28_div(1);
+               clk_i0_v := clk_28_div(1);
 
             when others =>
-               CLK_i0 <= clk_28_div(0);
+               clk_i0_v := clk_28_div(0);
          end case;
+
+         cpu_speed_d <= zxn_cpu_speed;
+         if zxn_cpu_speed /= cpu_speed_d then
+            cpu_settle <= (others => '1');
+         elsif cpu_settle /= 0 then
+            cpu_settle <= cpu_settle - 1;
+         end if;
+
+         if clk_i0_v = '0' or (zxn_cpu_speed = cpu_speed_d and cpu_settle = 0) then
+            CLK_i0 <= clk_i0_v;
+         end if;
 
          if clk_28_div(1 downto 0) = "11" then
             zxn_cpu_speed2 <= zxn_cpu_speed;
          end if;
 
-         -- 28 MHz mode: take the CPU clock directly from CLK_28
-         cpu_sel_28 <= zxn_cpu_speed2(1) and zxn_cpu_speed2(0);
+         -- 28 MHz mode: take the CPU clock directly from CLK_28. As in MiSTer (q0/q1), the select
+         -- follows zxn_cpu_speed, not the delayed zxn_cpu_speed2, so the CPU leaves CLK_28 (and its
+         -- 28 MHz wait state) as soon as the ZX Next changes its speed.
+         cpu_sel_28 <= zxn_cpu_speed(1) and zxn_cpu_speed(0);
       end if;
    end process;
 
