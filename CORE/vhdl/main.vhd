@@ -32,6 +32,7 @@ entity main is
 
       reset_soft_i            : in  std_logic;
       reset_hard_i            : in  std_logic;
+      menu_reset_i            : in  std_logic;              -- OSM "Reset ZX Next": rising edge = soft reset
       pause_i                 : in  std_logic;
 
       -- MiSTer core main clock speed:
@@ -139,6 +140,9 @@ architecture synthesis of main is
    signal reset_core          : std_logic;
    signal hw_reset_cnt        : unsigned(15 downto 0) := (others => '0');
    signal hw_reset            : std_logic := '0';
+   signal menu_reset_d        : std_logic := '0';
+   signal menu_reset_cnt      : unsigned(15 downto 0) := (others => '0');
+   signal menu_reset          : std_logic := '0';
 
    -- ZX Next memory ports
    signal ram_a_addr          : std_logic_vector(20 downto 0);
@@ -215,8 +219,22 @@ begin
 
    -- Short press of the MEGA65 reset button: ZX Next soft reset
    -- Long press of the MEGA65 reset button:  ZX Next hard reset (reloads the firmware from SD card)
+   -- OSM "Reset ZX Next": soft reset (the Shell unselects the menu item again, see m2m-rom.asm)
    -- Until the SD card image is mounted, the ZX Next is held in a hard reset: it boots from it.
-   reset_core <= reset_soft_i or reset_hard_i or not img_enable_i;
+   reset_core <= reset_soft_i or reset_hard_i or not img_enable_i or menu_reset;
+
+   menu_reset_proc : process (clk_main_i)
+   begin
+      if rising_edge(clk_main_i) then
+         menu_reset_d <= menu_reset_i;
+         if menu_reset_i = '1' and menu_reset_d = '0' then
+            menu_reset_cnt <= (others => '1');
+         elsif menu_reset_cnt /= 0 then
+            menu_reset_cnt <= menu_reset_cnt - 1;
+         end if;
+         menu_reset <= '1' when menu_reset_cnt /= 0 else '0';
+      end if;
+   end process menu_reset_proc;
 
    hard_reset_proc : process (clk_main_i)
    begin

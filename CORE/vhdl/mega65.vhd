@@ -296,6 +296,7 @@ constant C_MENU_VGA_15KHZCS      : natural := 19;
 constant C_MENU_FLIP_JOYS        : natural := 23;
 constant C_MENU_CRT_EMULATION    : natural := 24;
 constant C_MENU_IMPROVE_AUDIO    : natural := 25;
+constant C_MENU_RESET            : natural := 26;
 
 signal main_scandoubler       : std_logic;
 signal main_sd_active         : std_logic;
@@ -461,6 +462,7 @@ begin
 
          reset_soft_i         => main_reset_core_i,
          reset_hard_i         => main_reset_m2m_i,
+         menu_reset_i         => main_osm_control_i(C_MENU_RESET),
          pause_i              => main_pause_core_i,
 
          clk_main_speed_i     => CORE_CLK_SPEED,

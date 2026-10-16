@@ -197,12 +197,15 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
 
 ### 3.5 OSM menu (`config.vhd` ↔ `mega65.vhd`)
 
-- 30 lines (`OPTM_SIZE = 30`): HDMI submenu (lines 2–13), VGA submenu (14–21), Flip joysticks
-  (23), HDMI CRT emulation (24), Audio improvements (25), About & Help (27), Close (29). Main menu
-  shows 12 lines with `OPTM_DY = 12`. There is no HDMI Zoom-in item: M2M's `crop.vhd` is
-  hard-coded for the C64 picture (320x200 behind 33/35 pixel borders), so `qnice_zoom_crop_o` is
+- 31 lines (`OPTM_SIZE = 31`): HDMI submenu (lines 2–13), VGA submenu (14–21), Flip joysticks
+  (23), HDMI CRT emulation (24), Audio improvements (25), Reset ZX Next (26), About & Help (28),
+  Close (30). Main menu shows 13 lines with `OPTM_DY = 13`.
+- **Reset ZX Next** is an action, not a setting: `main.vhd` makes a soft reset on the rising edge
+  of its bit, and the Shell's `OSM_SEL_POST` (`m2m-rom.asm`) unselects the item again. It can't
+  use the CSR reset: the board tops OR that into `main_reset_m2m`, i.e. the ZX Next hard reset.
+- There is no HDMI Zoom-in item: M2M's `crop.vhd` is hard-coded for the C64 picture (320x200 behind 33/35 pixel borders), so `qnice_zoom_crop_o` is
   tied to '0'. A ZX Next zoom would need its own crop in the core.
-- **Bit N of the OSM control vector = menu line N = `C_MENU_*` in `mega65.vhd:279-292`.**
+- **Bit N of the OSM control vector = menu line N = `C_MENU_*` in `mega65.vhd`.**
   Inserting or deleting a line silently shifts every later index. Re-sync `C_MENU_*` and keep
   `OPTM_SIZE` = number of lines in `OPTM_ITEMS` = number of entries in `OPTM_GROUPS`.
 - `cpu_speed_sw_i` on `main` is tied to `'0'`: there is no CPU speed menu item (use F13).
@@ -317,7 +320,7 @@ check_timing -verbose -file check_timing.rpt
   enable sees `ram_a_req_i` only through the even-edge queue branch) drops the `main_clk`
   multicycle (it filters by cell name). Don't add more multicycles without proving the capture
   register really waits that long.
-- `C_MENU_*` ↔ menu line coupling (§3.5). The main menu uses all 12 lines of `OPTM_DY`; on
+- `C_MENU_*` ↔ menu line coupling (§3.5). The main menu uses all 13 lines of `OPTM_DY`; on
   M2M V2.1.0 an oversized menu is a fatal Shell error.
 - QNICE must not use the SD card after `PREP_START` (§3.3): the core drives it. Anything in the
   Shell that needs files after startup (file browser, settings, vdrives) would collide with it.

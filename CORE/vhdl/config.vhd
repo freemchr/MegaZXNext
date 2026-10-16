@@ -78,7 +78,7 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 -- window contains the amount of pages, so each zero-terminated string can be up to 4095 bytes = 4094 characters long.
 
 constant SCR_WELCOME : string :=
-   "ZX Spectrum Next for MEGA65 V0.1 alpha\n" &
+   "ZX Spectrum Next for MEGA65 V0.2 alpha\n" &
    "Ported by Chris Freeman\n" &
    "based on ZXNext_MISTer\n\n" &
    "Powered by MiSTer2MEGA65 V2.0.1,\n" &
@@ -103,7 +103,7 @@ constant SCR_WELCOME : string :=
    "\n    Press Space to continue.\n";
 
 constant HELP_1 : string :=
-   "\n ZX Spectrum Next for MEGA65 V0.1 alpha\n\n" &
+   "\n ZX Spectrum Next for MEGA65 V0.2 alpha\n\n" &
    " Port of ZXNext_MISTer (Alvin Albrecht,\n" &
    " Victor Trucco, Fabio Belavenuto, Sorgelig)\n" &
    " Powered by MiSTer2MEGA65\n\n" &
@@ -128,6 +128,8 @@ constant HELP_2 : string :=
    " : + - * / = @  Symbol Shift combinations\n\n" &
    " F3  50/60 Hz   F9  Multiface NMI\n" &
    " F11 DivMMC NMI F13 CPU speed\n\n" &
+   " Reset: Reset ZX Next in the options menu\n" &
+   " or a short press of the reset button\n\n" &
    " Crsr left: Prev                   (2 of 2)\n" &
    " Press Space to close the help screen.";
 
@@ -244,7 +246,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "ZX SPECTRUM NEXT V0.1 ALPHA";
+constant CORENAME          : string := "ZX SPECTRUM NEXT V0.2 ALPHA";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
@@ -305,13 +307,13 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 30;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 31;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
 constant OPTM_DX           : natural := 25;
-constant OPTM_DY           : natural := 12;
+constant OPTM_DY           : natural := 13;
 
 -- The line numbers of the menu items are used in mega65.vhd (C_MENU_*): keep them in sync
 constant OPTM_ITEMS        : string :=
@@ -341,10 +343,11 @@ constant OPTM_ITEMS        : string :=
    " Flip joystick ports\n"  &    -- 23
    " HDMI: CRT emulation\n"  &    -- 24
    " Audio improvements\n"   &    -- 25
-   "\n"                      &    -- 26
-   " About & Help\n"         &    -- 27
-   "\n"                      &    -- 28
-   " Close Menu\n";               -- 29
+   " Reset ZX Next\n"        &    -- 26
+   "\n"                      &    -- 27
+   " About & Help\n"         &    -- 28
+   "\n"                      &    -- 29
+   " Close Menu\n";               -- 30
 
 -- define your own constants here and choose meaningful names
 constant OPTM_G_HDMI       : integer := 1;
@@ -353,6 +356,7 @@ constant OPTM_G_FLIP_JOYS  : integer := 3;
 constant OPTM_G_CRT        : integer := 4;
 constant OPTM_G_Audio      : integer := 5;
 constant OPTM_G_About_Help : integer := 6;
+constant OPTM_G_Reset      : integer := 7;     -- an action, not a setting: see OSM_SEL_POST in m2m-rom.asm
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -385,6 +389,7 @@ constant OPTM_GROUPS       : OPTM_GTYPE := ( OPTM_G_TEXT + OPTM_G_HEADLINE,     
                                              OPTM_G_FLIP_JOYS + OPTM_G_SINGLESEL,      -- Flip joystick ports
                                              OPTM_G_CRT       + OPTM_G_SINGLESEL,      -- HDMI: CRT emulation
                                              OPTM_G_Audio     + OPTM_G_SINGLESEL,      -- Audio improvements
+                                             OPTM_G_Reset     + OPTM_G_SINGLESEL,      -- Reset ZX Next
                                              OPTM_G_LINE,                              -- Line
                                              OPTM_G_About_Help + OPTM_G_HELP,          -- About & Help
                                              OPTM_G_LINE,                              -- Line

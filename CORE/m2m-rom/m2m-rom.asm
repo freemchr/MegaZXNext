@@ -151,8 +151,45 @@ PREP_START      SYSCALL(enter, 1)
 ; Output:
 ;   R8: 0=OK, else pointer to string with error message
 ;   R9: 0=OK, else error code
+;
+; ZX Next: "Reset ZX Next" is an action, not a setting. The core makes a soft
+; reset on the rising edge of the menu item (see main.vhd). Keep it selected
+; for a while so that the edge reaches the core, then unselect it again.
+OPTMG_RESET     .EQU    7                       ; OPTM_G_Reset in config.vhd
+
 OSM_SEL_POST    INCRB
-                XOR     R8, R8
+                CMP     OPTMG_RESET, R8         ; "Reset ZX Next"?
+                RBRA    _OSP_RET, !Z
+                CMP     1, R9                   ; selected (not unselected)?
+                RBRA    _OSP_RET, !Z
+
+                MOVE    0x1000, R1
+_OSP_WAIT       SUB     1, R1
+                RBRA    _OSP_WAIT, !Z
+
+                ; Find the menu index of the item (group in R8) and unselect it
+                MOVE    R8, R4                  ; R4: menu group
+                MOVE    OPTM_DATA, R0
+                MOVE    @R0, R0
+                ADD     OPTM_IR_GROUPS, R0
+                MOVE    @R0, R0                 ; R0: menu groups
+                MOVE    OPTM_ICOUNT, R2
+                MOVE    @R2, R2                 ; R2: amount of menu items
+                XOR     R1, R1                  ; R1: menu index
+_OSP_FIND       MOVE    @R0++, R3
+                AND     0x00FF, R3
+                CMP     R4, R3
+                RBRA    _OSP_FOUND, Z
+                ADD     1, R1
+                CMP     R1, R2
+                RBRA    _OSP_FIND, !Z
+                RBRA    _OSP_RET, 1             ; not found: leave it selected
+
+_OSP_FOUND      MOVE    R1, R8
+                XOR     R9, R9
+                RSUB    M2M$FORCE_MENU, 1
+
+_OSP_RET        XOR     R8, R8
                 XOR     R9, R9
                 DECRB
                 RET

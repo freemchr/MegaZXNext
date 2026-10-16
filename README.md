@@ -13,7 +13,7 @@ Multiface, and 2 MB of RAM. It runs NextZXOS and the classic Spectrum 48K, 128K 
 Status: alpha, MEGA65 R6 only
 -----------------------------
 
-**V0.1 alpha** has been tested on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and
+**V0.2 alpha** has been tested on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and
 the Browser work, music plays, and Next games (Warhawk Next, Nextoid) run with keyboard
 control. Expect bugs, and please report them (see below).
 
@@ -66,21 +66,32 @@ Keyboard
 | F13                   | Next CPU speed (3.5 → 7 → 14 → 28 MHz) |
 | Help                  | Options menu               |
 
-The reset button: a short press is a soft reset, a long press a hard reset.
+The reset button: a short press is a soft reset (back to the NextZXOS menu), a long press a
+hard reset (reloads the firmware). **Reset ZX Next** in the options menu is a soft reset, too.
+
+Joysticks
+---------
+
+MEGA65 port 1 is the ZX Next's left joystick, port 2 its right joystick (**Flip joystick ports**
+in the options menu swaps them). What a joystick does is a setting of the ZX Next, not of the
+core. With the settings of the standard distribution the left joystick is **Cursor** (it moves
+through the NextZXOS menus) and the right one is **Sinclair 2** (it acts as the keys 1 to 5). Most
+games want **Kempston**: change the joystick modes in the ZX Next setup (press Space while the
+firmware boots) or in `/machines/next/config.ini` of the image. One fire button is supported.
 
 Options menu
 ------------
 
 Press **Help** for the options menu: HDMI mode (720p, 576p, 640x480, 720x480, 800x600), VGA
 mode (standard or 15 kHz retro), flip joystick ports, HDMI CRT emulation, audio improvements,
-and the help pages. The settings are not saved: the ZX Next owns the SD card while it runs.
+Reset ZX Next and the help pages. The settings are not saved: the ZX Next owns the SD card while it runs.
 
 Known issues
 ------------
 
 * Only tested on R6. R4/R5 are untested.
 * Now and then the core stops at a grey screen during boot. A reset (or switching off and on)
-  gets it going. Not seen since the CPU speed fix in V0.1, but not proven gone.
+  gets it going. Not seen since the CPU speed fix, but not proven gone.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
   machine ID the core reports).

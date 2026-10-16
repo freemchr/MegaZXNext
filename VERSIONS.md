@@ -1,4 +1,4 @@
-Version 0.1 alpha - October 2026
+Version 0.2 alpha - October 2026
 ================================
 
 First test release of the ZX Spectrum Next for the MEGA65, for the MEGA65 **R6**.
@@ -21,6 +21,7 @@ Features (implemented; not all of them tested yet)
 * HDMI (720p, 576p, 640x480, 720x480, 800x600) and VGA (standard or 15 kHz retro),
   HDMI CRT emulation, audio filters, joysticks in both ports (can be swapped).
 * Real-time clock from the MEGA65.
+* "Reset ZX Next" in the options menu (soft reset, like a short press of the reset button).
 
 Fixed during the bring-up (not in the MiSTer core)
 ---------------------------------------------------
@@ -35,9 +36,18 @@ Known issues
 * R4 and R5 untested.
 * An occasional grey screen at boot (a reset helps); not seen since the CPU speed fix.
 * No mouse support.
+* Joystick modes are ZX Next settings: with the standard distribution, port 2 is Sinclair 2
+  (keys 1-5) and port 1 is Cursor. Most games want Kempston (change it in the ZX Next setup).
+  One fire button only.
 * The firmware's boot screen says "MiSTer Next".
 * Tape (.TAP) and +3 disk (.DSK) loading untested.
 * The options menu settings are not saved (the ZX Next owns the SD card while it runs).
+
+Version 0.1 alpha - September 2026
+==================================
+
+First build, published before it had run on a MEGA65 (no SD card image support yet).
+Superseded by V0.2 alpha; do not use it.
 
 The MiSTer2MEGA65 framework changelog is at
 https://github.com/sy2002/MiSTer2MEGA65/blob/master/VERSIONS.md
