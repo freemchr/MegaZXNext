@@ -29,10 +29,47 @@ Requirements
   system files are included in this core: the ZX Next loads its firmware, ROMs and NextZXOS
   from that image, just like the real machine loads them from its SD card.
 
+What goes on the SD card
+------------------------
+
+The MEGA65's SD card (FAT32) needs one file for this core:
+
+| Path on the MEGA65 SD card | What it is |
+|---|---|
+| `/zxnext/boot.vhd` or `/zxnext/boot.img` | an image (a byte-for-byte copy) of a complete ZX Next SD card |
+
+Inside that image, the ZX Next expects the **System/Next distribution**, exactly as on a real
+ZX Spectrum Next. The files it needs at a minimum:
+
+| Path inside the image | What it is |
+|---|---|
+| `/TBBLUE.FW` | the ZX Next firmware (boot menu, loads the ROMs) |
+| `/machines/next/` | the ROMs (`enNextZX.rom` NextZXOS ROM, `enNxtmmc.rom` DivMMC ROM, `48.rom`, `128.rom`, `plus3.rom`, ...), keymaps and `config.ini` (machine settings) |
+| `/nextzxos/`, `/sys/`, `/dot/` | NextZXOS and its system files and dot commands |
+
+Everything else in the distribution (`/games`, `/apps`, `/demos`, `/docs`, ...) is optional
+but recommended. `TBBLUE.TBU` (FPGA core updates for a real Next) is not used.
+
+**These files are not provided here.** The ROMs, the firmware and NextZXOS are copyrighted by
+their owners (among others: the Sinclair ZX Spectrum ROMs © Amstrad / Sky plc, NextZXOS and
+NextBASIC © Garry Lancaster, TBBlue © Victor Trucco and Fabio Belavenuto, System/Next ©
+SpecNext Ltd; see the distribution's `README.md` and `LICENSE.md`). This repository and its
+releases contain only the FPGA core. Get the files from their official sources:
+
+* the **System/Next distribution**, free from SpecNext Ltd (https://www.specnext.com), or
+* the **`boot.vhd`** of the MiSTer core (in the `releases` folder of
+  [ZXNext_MiSTer](https://github.com/MiSTer-devel/ZXNext_MISTer)): a ready-made image with an
+  older distribution.
+
+To make an image with the current distribution, prepare a ZX Next SD card the official way (a
+FAT32 card with the distribution unzipped onto it), then copy the whole card into an image file
+(e.g. `dd` on Linux/macOS, Win32 Disk Imager on Windows). Tested: System/Next 24.11 in a
+2 GB image.
+
 Installation
 ------------
 
-1. **The ZX Next SD card image.** Use one of:
+1. **The ZX Next SD card image** (see above). Use one of:
    * the `boot.vhd` of the MiSTer core (in the `releases` folder of
      [ZXNext_MiSTer](https://github.com/MiSTer-devel/ZXNext_MISTer)), or
    * an image file of a ZX Next SD card with the System/Next distribution (tested: 24.11).
