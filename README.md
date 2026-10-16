@@ -1,19 +1,25 @@
-ZX Spectrum Next for MEGA65
-===========================
+MegaZXNext
+==========
 
-A port of the [ZX Spectrum Next](https://www.specnext.com/) core to the
-[MEGA65](https://mega65.org/), based on the MiSTer core
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-cjf077-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/cjf077)
+
+A ZX Next core for the [MEGA65](https://mega65.org/): a port of the open source
+[ZX Spectrum Next](https://www.specnext.com/) FPGA core, based on the MiSTer core
 [ZXNext_MiSTer](https://github.com/MiSTer-devel/ZXNext_MISTer) and built on the
 [MiSTer2MEGA65](https://github.com/sy2002/MiSTer2MEGA65) framework.
 
-The ZX Spectrum Next is an enhanced ZX Spectrum: a Z80N CPU at 3.5, 7, 14 or 28 MHz,
+MegaZXNext is not a ZX Spectrum Next and is not made or endorsed by SpecNext Ltd. The licence of
+the System/Next distribution does not allow systems built from the ZX Next's VHDL to be called
+"ZX Spectrum Next"; "Sinclair" and "ZX Spectrum" are trademarks of their owners.
+
+The ZX Next is an enhanced ZX Spectrum: a Z80N CPU at 3.5, 7, 14 or 28 MHz,
 Layer 2 bitmap graphics, tilemap, sprites, copper, DMA, three AY sound chips, DivMMC and
 Multiface, and 2 MB of RAM. It runs NextZXOS and the classic Spectrum 48K, 128K and +3 software.
 
 Status: alpha, MEGA65 R6 only
 -----------------------------
 
-**V0.2 alpha** has been tested on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and
+**V0.2 alpha** (released as "ZX Spectrum Next for MEGA65") has been tested on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and
 the Browser work, music plays, Next games (Warhawk Next, Nextoid) run with keyboard
 control, tape (.TAP) games load, and a joystick reads correctly as Kempston. Expect bugs, and please report them (see below).
 
