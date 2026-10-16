@@ -6,7 +6,8 @@ Based on ZXNext_MiSTer (ZX Next core 3.02.00, matches System/Next 24.11) and
 MiSTer2MEGA65 V2.0.1.
 
 Tested on an R6: NextZXOS boots from the SD card image, its menus, 48K BASIC and the
-Browser work, music plays, Warhawk Next and Nextoid run with keyboard control.
+Browser work, music plays, Warhawk Next and Nextoid run with keyboard control, a .TAP game
+(Dizzy) loads, and a joystick in port 2 reads correctly as Kempston (all directions and fire).
 R4 and R5 builds are untested.
 
 Features (implemented; not all of them tested yet)
@@ -34,13 +35,14 @@ Known issues
 ------------
 
 * R4 and R5 untested.
-* An occasional grey screen at boot (a reset helps); not seen since the CPU speed fix.
+* Now and then the ZX Next stops at a grey screen after a reset. Another reset gets it going;
+  sometimes it takes a couple (a long press of the reset button helps).
 * No mouse support.
-* Joystick modes are ZX Next settings: with the standard distribution, port 2 is Sinclair 2
-  (keys 1-5) and port 1 is Cursor. Most games want Kempston (change it in the ZX Next setup).
+* Joystick modes are ZX Next settings, not core settings: depending on your image, the
+  joystick may act as Cursor or Sinclair keys. Most games want Kempston (see the README).
   One fire button only.
 * The firmware's boot screen says "MiSTer Next".
-* Tape (.TAP) and +3 disk (.DSK) loading untested.
+* +3 disk images (.DSK) untested.
 * The options menu settings are not saved (the ZX Next owns the SD card while it runs).
 
 Version 0.1 alpha - September 2026

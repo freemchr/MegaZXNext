@@ -14,8 +14,8 @@ Status: alpha, MEGA65 R6 only
 -----------------------------
 
 **V0.2 alpha** has been tested on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and
-the Browser work, music plays, and Next games (Warhawk Next, Nextoid) run with keyboard
-control. Expect bugs, and please report them (see below).
+the Browser work, music plays, Next games (Warhawk Next, Nextoid) run with keyboard
+control, tape (.TAP) games load, and a joystick reads correctly as Kempston. Expect bugs, and please report them (see below).
 
 * **R4 and R5:** the core builds for them, but nobody has tested it on these boards yet. If you
   have one, a test report is very welcome.
@@ -74,10 +74,11 @@ Joysticks
 
 MEGA65 port 1 is the ZX Next's left joystick, port 2 its right joystick (**Flip joystick ports**
 in the options menu swaps them). What a joystick does is a setting of the ZX Next, not of the
-core. With the settings of the standard distribution the left joystick is **Cursor** (it moves
-through the NextZXOS menus) and the right one is **Sinclair 2** (it acts as the keys 1 to 5). Most
-games want **Kempston**: change the joystick modes in the ZX Next setup (press Space while the
-firmware boots) or in `/machines/next/config.ini` of the image. One fire button is supported.
+core, and it depends on your image: a joystick may act as **Cursor** keys (it moves through the
+NextZXOS menus) or as **Sinclair** keys (the number keys). Most games want **Kempston**. To
+change it: press Space while the firmware boots, select the machine, edit its settings (press E,
+the joysticks are on the second page) and set **Right Joy** (port 2) or **Left Joy** (port 1) to
+**Kempston 1**, then save. The ZX Next stores it in the image. One fire button is supported.
 
 Options menu
 ------------
@@ -90,12 +91,12 @@ Known issues
 ------------
 
 * Only tested on R6. R4/R5 are untested.
-* Now and then the core stops at a grey screen during boot. A reset (or switching off and on)
-  gets it going. Not seen since the CPU speed fix, but not proven gone.
+* Now and then the ZX Next stops at a grey screen after a reset. Another reset gets it going;
+  sometimes it takes a couple (a long press of the reset button helps). Being investigated.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
   machine ID the core reports).
-* Tape files (.TAP) and +3 disk images (.DSK) have not been tested yet.
+* +3 disk images (.DSK) have not been tested yet.
 
 Reporting issues
 ----------------
