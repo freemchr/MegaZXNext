@@ -3,7 +3,7 @@
 --
 -- MEGA65 main file that contains the whole machine
 --
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 -- based on ZXNext_MISTer by the MiSTer development team
 --
 -- MiSTer2MEGA65 done by sy2002 and MJoergen in 2022 and licensed under GPL v3
@@ -276,6 +276,7 @@ signal clk_14                 : std_logic;
 signal clk_7                  : std_logic;
 signal main_rst               : std_logic;
 signal sdram_clk              : std_logic;               -- 112 MHz
+signal sdram_out_clk          : std_logic;               -- 112 MHz, 56.25 degrees late (SDRAM clock pin)
 signal sdram_rst              : std_logic;
 
 ---------------------------------------------------------------------------------------------
@@ -353,7 +354,7 @@ begin
    -- only the R4, R5 and R6 board top files (M2M/vhdl/top_mega65-r4/5/6.vhd) wire them to the core.
    -- R3 has no SDRAM.
    assert G_BOARD /= "MEGA65_R3"
-      report "The ZX Spectrum Next core needs a MEGA65 R4, R5 or R6: R3 has no SDRAM"
+      report "MegaZXNext needs a MEGA65 R4, R5 or R6: R3 has no SDRAM"
       severity failure;
 
    hr_core_write_o      <= '0';
@@ -425,6 +426,7 @@ begin
          clk_14_o          => clk_14,
          clk_7_o           => clk_7,
          sdram_clk_o       => sdram_clk,
+         sdram_out_clk_o   => sdram_out_clk,
          main_rst_o        => main_rst,
          sdram_rst_o       => sdram_rst
       ); -- clk_gen
@@ -458,6 +460,7 @@ begin
          clk_14_i             => clk_14,
          clk_7_i              => clk_7,
          clk_sdram_i          => sdram_clk,
+         clk_sdram_out_i      => sdram_out_clk,
          rst_sdram_i          => sdram_rst,
 
          reset_soft_i         => main_reset_core_i,

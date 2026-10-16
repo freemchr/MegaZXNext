@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- SD card image: gives the ZX Next an SD card that is an image file on the MEGA65's SD card
 --

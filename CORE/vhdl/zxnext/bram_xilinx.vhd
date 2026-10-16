@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Xilinx replacement for ZXNext_MiSTer/rtl/mister/bram.vhd
 --

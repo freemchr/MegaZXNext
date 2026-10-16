@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Testbench for sd_image.vhd (virtual SD card served from an image on the physical card)
 --

@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Virtual SD card: emulates an SPI mode SD card on top of a sector interface
 --

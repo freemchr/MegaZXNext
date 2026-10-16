@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- CPU speed change testbench: the ZX Next (zxnext_top_m65) with sdram_zxn and the SDRAM model,
 -- running the test boot ROM of mk_cpu_speed_rom.py. The program lowers the CPU speed at different
@@ -34,6 +34,7 @@ architecture sim of tb_cpu_speed is
    constant C_T_PATH : time := 17.7 ns;      -- ram_a_wait / ram_a_do to the ZX Next (2 sdram_clk cycles)
 
    signal clk_112    : std_logic := '0';
+   signal clk_112_out: std_logic;            -- clk_112, 1.4 ns late (clk.vhd): SDRAM clock pin
    signal clk_28     : std_logic := '0';
    signal clk_28_n   : std_logic;
    signal clk_14     : std_logic := '0';
@@ -72,6 +73,8 @@ architecture sim of tb_cpu_speed is
    signal n_bad      : natural := 0;
 
 begin
+
+   clk_112_out <= transport clk_112 after 1.4 ns;
 
    -- 112 MHz and CLK_28 phase aligned (as the MMCM in clk.vhd)
    clk_proc : process
@@ -161,6 +164,7 @@ begin
    i_sdram_zxn : entity work.sdram_zxn
       port map (
          clk_i           => clk_112,
+         clk_out_i       => clk_112_out,
          rst_i           => rst_112,
          clk_28_i        => clk_28,
          ram_a_addr_i    => a_addr,

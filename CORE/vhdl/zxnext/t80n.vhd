@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Copy of ZXNext_MiSTer/rtl/cpu/t80n.vhd with one fix for Vivado:
 -- the block I/O parity flag masked a 9-bit vector with the 4-bit literal x"7"

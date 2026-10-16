@@ -1,7 +1,20 @@
+Version 0.3 alpha - not released yet
+====================================
+
+* Renamed to **MegaZXNext** ("a ZX Next core for the MEGA65"): the System/Next licence does
+  not allow systems built from the ZX Next's VHDL to be called "ZX Spectrum Next". Welcome
+  screen, help, options menu and core name changed.
+* SDRAM read timing fixed: at 112 MHz the read data was sampled just after the end of its
+  valid window (hold slack -0.9 ns against the SDRAM datasheet), so reads could return wrong
+  bytes depending on the chip and temperature. Suspected cause of the grey screen hangs. The
+  SDRAM clock pin now runs 1.4 ns later (PLL), and the SDRAM I/O timing is constrained, so
+  Vivado checks the margins. Not yet tested on hardware.
+
 Version 0.2 alpha - October 2026
 ================================
 
-First test release of the ZX Spectrum Next for the MEGA65, for the MEGA65 **R6**.
+First test release of the ZX Next core for the MEGA65 (released as "ZX Spectrum Next for
+MEGA65"), for the MEGA65 **R6**.
 Based on ZXNext_MiSTer (ZX Next core 3.02.00, matches System/Next 24.11) and
 MiSTer2MEGA65 V2.0.1.
 

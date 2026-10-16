@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Converts the ZX Next's 12-bit unsigned audio into 16-bit signed PCM and
 -- removes the DC offset (the ZX Next mixer output is not centered around zero).

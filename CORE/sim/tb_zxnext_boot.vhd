@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Boot testbench: the ZX Next (zxnext_top_m65) from reset with an ideal memory on port A
 -- (and port B), no SD card. Reports how many memory requests it makes and whether it starts

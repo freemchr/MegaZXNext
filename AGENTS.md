@@ -1,8 +1,10 @@
 # MegaZXNext — Project Guide for Coding Agents
 
 This is the cold-start brief for coding agents working on **MegaZXNext**, the port of the
-**ZX Spectrum Next** MiSTer core to the **MEGA65**, built on the **MiSTer2MEGA65 (M2M)**
-framework. Read it first: it covers what this repo is, how it is laid out, where it deviates
+ZX Next MiSTer core (ZXNext_MiSTer) to the **MEGA65**, built on the **MiSTer2MEGA65 (M2M)**
+framework. **Naming:** the System/Next licence forbids calling systems built from the ZX Next
+VHDL "ZX Spectrum Next". Our core is "MegaZXNext" / "a ZX Next core for the MEGA65"; never name
+it "ZX Spectrum Next" in screens, docs or releases (describing the original machine is fine). Read it first: it covers what this repo is, how it is laid out, where it deviates
 from the stock M2M template, how to build and simulate it, and the gotchas. Spend your context
 on the task, not on rediscovering the layout.
 
@@ -28,7 +30,8 @@ on the task, not on rediscovering the layout.
   three top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
 - **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **R6 bring-up in
   progress:** NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC and the Browser work.
-  Open: an intermittent grey screen at boot (not seen since the CPU speed fix in §3.1, not proven gone).
+  V0.2 alpha is released (R6). Open: an intermittent grey screen after resets (seen on V0.2).
+  Suspected cause: SDRAM read hold timing (§3.2), fixed in V0.3, not yet tested on hardware.
   Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
   on R6; R4/R5 are untested and need outside testers before they are called working.
 
@@ -107,6 +110,9 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
 - One `MMCME2_ADV`: VCO = 100 MHz / 5 × 35 = 700 MHz. Outputs: CLKOUT0 = **112 MHz** SDRAM
   (fractional 6.25), CLKOUT1 = **28 MHz** main, CLKOUT2 = 28 MHz at 180°, CLKOUT3 = 14 MHz,
   CLKOUT4 = 7 MHz. All are phase aligned; `sdram_zxn` relies on 112 = 4 × 28 being phase aligned.
+- A `PLLE2_BASE` (`i_pll_sdram`) makes `sdram_out_clk`: the 112 MHz clock, 56.25° (1.40 ns) late.
+  It only clocks the ODDR of the SDRAM clock pin (§3.2). The MMCM can't: only CLKOUT0 is
+  fractional.
 - `CORE_CLK_SPEED` in `globals.vhd` = 28_000_000 and must match CLKOUT1.
 - **CPU clock:** the ZX Next derives a register-driven CPU clock (`CLK_i0`, 3.5/7/14 MHz) and
   switches to 28 MHz via a **`BUFGMUX_CTRL`** (`zxnext_top_m65.vhd`; MiSTer used a fabric clock
@@ -132,8 +138,13 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
 - The 2 MB of ZX Next RAM live in the **SDRAM** (IS42S16320F-6BL). The core does **not** use
   HyperRAM (`C_HMAP_M2M` only). HyperRAM is still used by M2M for the HDMI scaler.
 - Read the file header first. Key points: 112 MHz, CL3, tRCD 3, an ACTIVE every 8 cycles,
-  IOB-registered outputs and DQ input, SDRAM clock = inverted controller clock via ODDR
-  (MJoergen's proven MEGA65 I/O scheme). Port A (CPU/DMA) has a wait signal. Port B (Layer 2
+  IOB-registered outputs and DQ input, SDRAM clock = inverted `sdram_out_clk` via ODDR
+  (MJoergen's MEGA65 I/O scheme; he runs it at 166 MHz). Port A (CPU/DMA) has a wait signal.
+- **SDRAM I/O timing is constrained** in `CORE.xdc` (datasheet tAC/tOH/tIS/tIH, read data
+  sampled CL+1 cycles after the READ). With the plain inverted controller clock (V0.2) the read
+  hold slack was **-0.9 ns**: at 112 MHz the sample sat just after the data valid window. The
+  1.4 ns of `sdram_out_clk` centre it. After a build, check the `sdram_pin_clk` paths; if you
+  change the clock frequency, CAS latency or capture cycle, re-tune `CLKOUT0_PHASE` of the PLL. Port B (Layer 2
   fetch) has **no wait**: the controller learns the Layer 2 request phase and keeps the two
   cycles before it free. CPU writes invalidate a matching Port B cache line.
 - **Port A is a 56 MHz interface:** it is evaluated, and `ram_a_wait`/`ram_a_do` change, only on
@@ -334,10 +345,12 @@ check_timing -verbose -file check_timing.rpt
 
 ## 8. Open items
 
-The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V0.1 alpha
-(R6 only) is the current target; its known issues are listed in `README.md` and `VERSIONS.md`.
-Next: more hardware tests on R6 (tape/disk images, joysticks, VGA, function keys), the grey
-screen at boot if it comes back, R4/R5 testers, then the SDRAM I/O constraints (audit item 3).
+The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V0.2 alpha
+(R6 only) is released; V0.3 alpha (rename to MegaZXNext, SDRAM timing fix) is built but not
+yet tested. Known issues are listed in `README.md` and `VERSIONS.md`. Toward a beta: confirm
+on R6 that the grey screen is gone (otherwise: CPU trace probe triggered by the DivMMC
+interrupt handler saving an SP of 0x26xx to 0x25B8, i.e. re-entering itself), test VGA, F13,
+NMI keys, .DSK, saving settings, Reset ZX Next; mouse support; R4/R5 testers.
 Requested by the maintainer: a "MEGA65 Next" boot screen with the logo in
 `doc/assets/mega65-logo.png` instead of the firmware's "MiSTer Next" (the firmware picks that text
 by the machine ID 0xDA; not in our code). Keep the version in `config.vhd` (welcome screen,

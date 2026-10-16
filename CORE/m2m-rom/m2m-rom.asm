@@ -1,5 +1,5 @@
 ; ****************************************************************************
-; ZX Spectrum Next for MEGA65 (MegaZXNext) QNICE ROM
+; MegaZXNext: ZX Next core for the MEGA65 QNICE ROM
 ;
 ; Main program that is used to build m2m-rom.rom by make-rom.sh.
 ; The ROM is loaded by M2M/vhdl/QNICE/qnice.vhd.

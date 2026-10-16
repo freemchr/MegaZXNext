@@ -69,8 +69,13 @@ including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins
      "mandatory before any timing work".
    - This is acceptable for a first hardware test, but it is the first suspect if the CPU
      misbehaves only at some speeds.
-3. **SDRAM I/O has no input/output delays.** IOB packing makes the timing deterministic, but run
+3. **[FIXED in V0.3: `CORE.xdc` constrains the SDRAM I/O; PLL-shifted SDRAM clock]** **SDRAM I/O
+   has no input/output delays.** IOB packing makes the timing deterministic, but run
    `check_timing` and confirm there are no unconstrained-I/O warnings (guide 4.2.4, l.4208).
+   - Analysis of the routed V0.2 design with the datasheet values (2026-10-16): read hold slack
+     **-0.9 ns** (sample just after the data valid window at 112 MHz), read setup +2.6 ns,
+     command setup +0.5 ns, command hold +3.0 ns. Fixed by clocking the SDRAM clock ODDR with a
+     PLL copy of the controller clock that is 1.4 ns late.
 4. **[FIXED: `mega65.vhd` now fails elaboration on R3]** **R3 builds a core that cannot work.**
    - `top_mega65-r3.vhd` is stock, so on R3 the core's SD and SDRAM inputs take their port
      defaults (no card, RAM reads 0).

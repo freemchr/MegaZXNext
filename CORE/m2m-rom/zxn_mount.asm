@@ -1,5 +1,5 @@
 ; ****************************************************************************
-; ZX Spectrum Next for MEGA65 (MegaZXNext) QNICE ROM: ZX Next SD card image
+; MegaZXNext: ZX Next core for the MEGA65 QNICE ROM: ZX Next SD card image
 ;
 ; Included by m2m-rom.asm and by the emulator test test/test_zxn_mount.asm.
 ; Needs: HANDLE_DEV, WAIT_FOR_SD, ZXN_FH, ZXN_LBA, ZXN_SECTORS and the M2M
@@ -383,14 +383,14 @@ ZXN_LOG_EXT     .ASCII_W ", extents 0x"
 ZXN_LOG_CORRUPT .ASCII_W "ZX Next: broken FAT chain, next cluster 0x"
 
 ZXN_ERR_MOUNT   .ASCII_P "Cannot mount the SD card.\n\n"
-ZXN_HELP        .ASCII_P "The ZX Spectrum Next needs an image\n"
-                .ASCII_P "of its SD card on the MEGA65 SD card\n"
+ZXN_HELP        .ASCII_P "The ZX Next needs an image of its\n"
+                .ASCII_P "SD card on the MEGA65 SD card\n"
                 .ASCII_P "(FAT32), for example the boot.vhd of\n"
                 .ASCII_P "the MiSTer core:\n\n"
                 .ASCII_P "   /zxnext/boot.vhd   or\n"
                 .ASCII_W "   /zxnext/boot.img\n"
 ZXN_ERR_NOFILE  .ASCII_P "ZX Next SD card image not found.\n\n"
-                .ASCII_P "Copy the image of a ZX Spectrum Next\n"
+                .ASCII_P "Copy the image of a ZX Next\n"
                 .ASCII_P "SD card to the MEGA65 SD card as\n\n"
                 .ASCII_P "   /zxnext/boot.vhd   or\n"
                 .ASCII_W "   /zxnext/boot.img\n"

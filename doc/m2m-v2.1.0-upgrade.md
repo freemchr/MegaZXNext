@@ -44,7 +44,7 @@ What V2.1.0 changes, and what that means here
 | `CORE/vhdl/globals.vhd` | Add `VGA_STD_SYNC` and `HDMI_VIEW` (`framework.vhd` reads them with no fallback). Use the stock bypass values `C_VGA_SYNC_RESHAPER_OFF` and `C_HDMI_VIEW_LEGACY`. `video_modes_pkg` is already `use`d. |
 | `CORE/vhdl/mega65.vhd` | Add port `qnice_hdmi_view_size_o : out std_logic_vector(1 downto 0)` and drive it `(others => '0')`. The new board tops connect it. |
 | `CORE/CORE-R{3,4,5,6}.xpr` | Add `../M2M/vhdl/av_pipeline/vga_sync_reshaper.vhd` (VHDL 2008, synthesis + simulation) to all four. |
-| `CORE/release.toml` | New, and only needed if you adopt `make_release.py`. Set the display name, file base and boards (R4/R5/R6). Match the `CORENAME` regex to `"ZX SPECTRUM NEXT V..."`. Set the shell config filename to `zxncfg`. |
+| `CORE/release.toml` | New, and only needed if you adopt `make_release.py`. Set the display name, file base and boards (R4/R5/R6). Match the `CORENAME` regex to `"MEGAZXNEXT V..."`. Set the shell config filename to `zxncfg`. |
 
 **Manual 3-way merge** (local changes overlap with upstream changes):
 

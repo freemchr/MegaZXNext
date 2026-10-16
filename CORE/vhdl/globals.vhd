@@ -3,7 +3,7 @@
 --
 -- Global constants
 --
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- MiSTer2MEGA65 done by sy2002 and MJoergen in 2022 and licensed under GPL v3
 -- MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
@@ -43,7 +43,7 @@ constant QNICE_FIRMWARE           : string  := QNICE_FIRMWARE_M2M;
 -- then add all the clocks speeds here by adding more constants.
 ----------------------------------------------------------------------------------------------------------
 
--- ZX Spectrum Next: 28 MHz main clock (see clk.vhd)
+-- ZX Next: 28 MHz main clock (see clk.vhd)
 constant CORE_CLK_SPEED       : natural := 28_000_000;
 
 -- System clock speed (crystal that is driving the FPGA) and QNICE clock speed

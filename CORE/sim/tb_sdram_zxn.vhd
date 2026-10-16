@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Testbench for sdram_zxn.vhd
 --
@@ -46,6 +46,7 @@ architecture sim of tb_sdram_zxn is
    constant C_T_PATH   : time := 2 * C_T112 - 100 ps; -- max. delay port A outputs -> CPU
 
    signal clk112       : std_logic := '0';
+   signal clk112_out   : std_logic;          -- clk112, 1.4 ns late (clk.vhd): SDRAM clock pin
    signal clk28        : std_logic := '0';
    signal rst112       : std_logic := '1';
    signal running      : boolean := true;
@@ -103,6 +104,8 @@ architecture sim of tb_sdram_zxn is
 
 begin
 
+   clk112_out <= transport clk112 after 1.4 ns;
+
    ---------------------------------------------------------------------------------------
    -- Clocks: 112 MHz and 28 MHz, phase aligned
    ---------------------------------------------------------------------------------------
@@ -134,6 +137,7 @@ begin
    i_dut : entity work.sdram_zxn
       port map (
          clk_i           => clk112,
+         clk_out_i       => clk112_out,
          rst_i           => rst112,
          clk_28_i        => clk28,
          ram_a_addr_i    => a_addr,

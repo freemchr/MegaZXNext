@@ -1,5 +1,5 @@
 ---------------------------------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- MEGA65 keyboard to ZX Next membrane matrix
 --

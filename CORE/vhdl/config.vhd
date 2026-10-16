@@ -3,7 +3,7 @@
 --
 -- Configuration data for the Shell
 --
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- MiSTer2MEGA65 done by sy2002 and MJoergen in 2023 and licensed under GPL v3
 -- MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
@@ -78,7 +78,8 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 -- window contains the amount of pages, so each zero-terminated string can be up to 4095 bytes = 4094 characters long.
 
 constant SCR_WELCOME : string :=
-   "ZX Spectrum Next for MEGA65 V0.2 alpha\n" &
+   "MegaZXNext V0.3 alpha\n" &
+   "a ZX Next core for the MEGA65\n" &
    "Ported by Chris Freeman\n" &
    "based on ZXNext_MISTer\n\n" &
    "Powered by MiSTer2MEGA65 V2.0.1,\n" &
@@ -103,7 +104,8 @@ constant SCR_WELCOME : string :=
    "\n    Press Space to continue.\n";
 
 constant HELP_1 : string :=
-   "\n ZX Spectrum Next for MEGA65 V0.2 alpha\n\n" &
+   "\n MegaZXNext V0.3 alpha\n" &
+   " a ZX Next core for the MEGA65\n\n" &
    " Port of ZXNext_MISTer (Alvin Albrecht,\n" &
    " Victor Trucco, Fabio Belavenuto, Sorgelig)\n" &
    " Powered by MiSTer2MEGA65\n\n" &
@@ -246,7 +248,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "ZX SPECTRUM NEXT V0.2 ALPHA";
+constant CORENAME          : string := "MEGAZXNEXT V0.3 ALPHA";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
@@ -317,7 +319,7 @@ constant OPTM_DY           : natural := 13;
 
 -- The line numbers of the menu items are used in mega65.vhd (C_MENU_*): keep them in sync
 constant OPTM_ITEMS        : string :=
-   " ZX Spectrum Next\n"     &    --  0
+   " MegaZXNext\n"           &    --  0
    "\n"                      &    --  1
    " HDMI: %s\n"             &    --  2  HDMI submenu
    " HDMI Mode\n"            &    --  3
@@ -361,7 +363,7 @@ constant OPTM_G_Reset      : integer := 7;     -- an action, not a setting: see 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
 
-constant OPTM_GROUPS       : OPTM_GTYPE := ( OPTM_G_TEXT + OPTM_G_HEADLINE,            -- ZX Spectrum Next
+constant OPTM_GROUPS       : OPTM_GTYPE := ( OPTM_G_TEXT + OPTM_G_HEADLINE,            -- MegaZXNext
                                              OPTM_G_LINE,                              -- Line
                                              OPTM_G_SUBMENU + OPTM_G_START,            -- HDMI submenu block: START: "HDMI: %s", cursor start position
                                              OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "HDMI Mode"

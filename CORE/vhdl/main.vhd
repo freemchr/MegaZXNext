@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- ZX Spectrum Next for MEGA65 (MegaZXNext)
+-- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Wrapper for the MiSTer core that runs exclusively in the core's clock domain
 --
@@ -28,6 +28,7 @@ entity main is
       clk_14_i                : in  std_logic;              -- 14 MHz
       clk_7_i                 : in  std_logic;              --  7 MHz
       clk_sdram_i             : in  std_logic;              -- 112 MHz
+      clk_sdram_out_i         : in  std_logic;              -- 112 MHz, 56.25 degrees late: SDRAM clock pin
       rst_sdram_i             : in  std_logic;              -- synchronous to clk_sdram_i
 
       reset_soft_i            : in  std_logic;
@@ -250,7 +251,7 @@ begin
    end process hard_reset_proc;
 
    ---------------------------------------------------------------------------------------------
-   -- ZX Spectrum Next
+   -- ZX Next
    ---------------------------------------------------------------------------------------------
 
    i_zxnext_top : entity zxnext.zxnext_top_m65
@@ -323,6 +324,7 @@ begin
    i_sdram : entity work.sdram_zxn
       port map (
          clk_i           => clk_sdram_i,
+         clk_out_i       => clk_sdram_out_i,
          rst_i           => rst_sdram_i,
          clk_28_i        => clk_main_i,
 
