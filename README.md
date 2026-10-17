@@ -41,6 +41,14 @@ Requirements
 What goes on the SD card
 ------------------------
 
+> [!IMPORTANT]
+> **A real ZX Next SD card is not supported.** MegaZXNext cannot currently use a FAT32 SD card
+> prepared for the ZX Next directly (for example, a card from a real ZX Spectrum Next put into
+> the MEGA65). What it supports is an **image file** made from such a card: prepare the ZX Next
+> SD card, copy the whole card into an image file, and put that file on the MEGA65's SD card as
+> `/zxnext/boot.vhd` or `/zxnext/boot.img`.
+
+
 The ZX Next files must be on the **external SD card** of the MEGA65 (the slot at the back), not
 on the internal card in the bottom tray. That card (FAT32) needs one file for this core:
 
