@@ -78,7 +78,7 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 -- window contains the amount of pages, so each zero-terminated string can be up to 4095 bytes = 4094 characters long.
 
 constant SCR_WELCOME : string :=
-   "MegaZXNext V0.3 alpha\n" &
+   "MegaZXNext V1.0\n" &
    "a ZX Next core for the MEGA65\n" &
    "Ported by Chris Freeman\n" &
    "based on ZXNext_MISTer\n\n" &
@@ -86,7 +86,8 @@ constant SCR_WELCOME : string :=
    "done by sy2002 and MJoergen in 2022\n\n" &
    "The ZX Next boots from an image of its SD\n" &
    "card (e.g. the MiSTer boot.vhd) that is\n" &
-   "stored on the MEGA65 SD card (FAT32) as\n" &
+   "stored on the MEGA65 external SD card\n" &
+   "(back slot, FAT32) as\n" &
    "/zxnext/boot.vhd or /zxnext/boot.img\n\n" &
    "    MEGA65 key        ZX Next\n" &
    "    " & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_5 & "\n" &
@@ -104,7 +105,7 @@ constant SCR_WELCOME : string :=
    "\n    Press Space to continue.\n";
 
 constant HELP_1 : string :=
-   "\n MegaZXNext V0.3 alpha\n" &
+   "\n MegaZXNext V1.0\n" &
    " a ZX Next core for the MEGA65\n\n" &
    " Port of ZXNext_MISTer (Alvin Albrecht,\n" &
    " Victor Trucco, Fabio Belavenuto, Sorgelig)\n" &
@@ -112,7 +113,8 @@ constant HELP_1 : string :=
    " Requires a MEGA65 R4, R5 or R6: the\n" &
    " ZX Next's 2 MB of RAM live in the SDRAM.\n\n" &
    " SD card: an image of a ZX Next SD card\n" &
-   " on the MEGA65 SD card (FAT32) as\n" &
+   " on the MEGA65 external SD card (back\n" &
+   " slot, FAT32) as\n" &
    " /zxnext/boot.vhd or /zxnext/boot.img\n\n" &
    " Cursor right to learn more.       (1 of 2)\n" &
    " Press Space to close the help screen.";
@@ -248,7 +250,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "MEGAZXNEXT V0.3 ALPHA";
+constant CORENAME          : string := "MEGAZXNEXT V1.0";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH

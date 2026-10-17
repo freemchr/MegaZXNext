@@ -28,11 +28,11 @@ on the task, not on rediscovering the layout.
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
   three top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
-- **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **R6 bring-up in
-  progress:** NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC and the Browser work.
-  V0.2 alpha is released (R6). Open: an intermittent grey screen after resets (seen on V0.2).
-  Suspected cause: SDRAM read hold timing (§3.2), fixed in V0.3, not yet tested on hardware.
-  Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
+- **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **V1.0 is released**
+  (R6; R4/R5 builds included, untested). On R6: NextZXOS boots from `/zxnext/boot.img` on the
+  external SD card; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
+  work. The V0.2 grey screen after resets was reported gone with the V0.3 build (SDRAM read hold
+  timing fix, §3.2). Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
   on R6; R4/R5 are untested and need outside testers before they are called working.
 
 ### Target boards
@@ -345,11 +345,10 @@ check_timing -verbose -file check_timing.rpt
 
 ## 8. Open items
 
-The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V0.2 alpha
-(R6 only) is released; V0.3 alpha (rename to MegaZXNext, SDRAM timing fix) is built but not
-yet tested. Known issues are listed in `README.md` and `VERSIONS.md`. Toward a beta: confirm
-on R6 that the grey screen is gone (otherwise: CPU trace probe triggered by the DivMMC
-interrupt handler saving an SP of 0x26xx to 0x25B8, i.e. re-entering itself), test VGA, F13,
+The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.0 (R6
+tested, R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
+If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt handler saving
+an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test VGA, F13,
 NMI keys, .DSK, saving settings, Reset ZX Next; mouse support; R4/R5 testers.
 Requested by the maintainer: a "MEGA65 Next" boot screen with the logo in
 `doc/assets/mega65-logo.png` instead of the firmware's "MiSTer Next" (the firmware picks that text

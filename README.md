@@ -16,12 +16,14 @@ The ZX Next is an enhanced ZX Spectrum: a Z80N CPU at 3.5, 7, 14 or 28 MHz,
 Layer 2 bitmap graphics, tilemap, sprites, copper, DMA, three AY sound chips, DivMMC and
 Multiface, and 2 MB of RAM. It runs NextZXOS and the classic Spectrum 48K, 128K and +3 software.
 
-Status: alpha, MEGA65 R6 only
------------------------------
+Status: V1.0, tested on the MEGA65 R6
+-------------------------------------
 
-**V0.2 alpha** (released as "ZX Spectrum Next for MEGA65") has been tested on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and
-the Browser work, music plays, Next games (Warhawk Next, Nextoid) run with keyboard
-control, tape (.TAP) games load, and a joystick reads correctly as Kempston. Expect bugs, and please report them (see below).
+**V1.0** runs on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and the Browser work,
+music plays, Next games (Warhawk Next, Nextoid) run with keyboard control, tape (.TAP) games
+load, and a joystick reads correctly as Kempston. The grey screen that V0.2 alpha sometimes
+showed after a reset is fixed (it was an SDRAM read timing problem). Please report bugs (see
+below).
 
 * **R4 and R5:** the core builds for them, but nobody has tested it on these boards yet. If you
   have one, a test report is very welcome.
@@ -31,16 +33,18 @@ Requirements
 ------------
 
 * A MEGA65 R6 (R4/R5 untested, see above).
-* An SD card in the MEGA65 (FAT32) with an **image of a ZX Next SD card** on it. No ROMs or
+* An SD card in the MEGA65's **external SD card slot** (at the back of the MEGA65).
+* On that card (FAT32): an **image of a ZX Next SD card**. No ROMs or
   system files are included in this core: the ZX Next loads its firmware, ROMs and NextZXOS
   from that image, just like the real machine loads them from its SD card.
 
 What goes on the SD card
 ------------------------
 
-The MEGA65's SD card (FAT32) needs one file for this core:
+The ZX Next files must be on the **external SD card** of the MEGA65 (the slot at the back), not
+on the internal card in the bottom tray. That card (FAT32) needs one file for this core:
 
-| Path on the MEGA65 SD card | What it is |
+| Path on the MEGA65 external SD card | What it is |
 |---|---|
 | `/zxnext/boot.vhd` or `/zxnext/boot.img` | an image (a byte-for-byte copy) of a complete ZX Next SD card |
 
@@ -80,9 +84,11 @@ Installation
      [ZXNext_MiSTer](https://github.com/MiSTer-devel/ZXNext_MISTer)), or
    * an image file of a ZX Next SD card with the System/Next distribution (tested: 24.11).
 
-   Copy it to the MEGA65's SD card as **`/zxnext/boot.vhd`** or **`/zxnext/boot.img`**. The
-   file does not need to be contiguous (up to 512 fragments are fine).
-2. **The core.** Flash the `.cor` file of the release into a core slot with the MEGA65's flash
+   Copy it to the MEGA65's **external SD card** (the slot at the back) as
+   **`/zxnext/boot.vhd`** or **`/zxnext/boot.img`**, and put that card into the external slot.
+   The file does not need to be contiguous (up to 512 fragments are fine).
+2. **The core.** Take the `.cor` file for your board from the release (`megazxnext_r6.cor`
+   for an R6; `_r5`/`_r4` are untested) and flash it into a core slot with the MEGA65's flash
    menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
 3. Start the core. The welcome screen shows the most important keys; press Space and the
    ZX Next boots.
@@ -134,8 +140,7 @@ Known issues
 ------------
 
 * Only tested on R6. R4/R5 are untested.
-* Now and then the ZX Next stops at a grey screen after a reset. Another reset gets it going;
-  sometimes it takes a couple (a long press of the reset button helps). Being investigated.
+* Not tested yet: VGA output, F13, the NMI keys (F9/F11), the **Reset ZX Next** menu item.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
   machine ID the core reports).
