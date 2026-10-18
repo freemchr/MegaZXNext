@@ -1,3 +1,16 @@
+R3 / R3A test build (1 MB) - October 2026
+==========================================
+
+A separate test build of V1.0 for the MEGA65 **R3 / R3A** (`megazxnext_r3.cor`). The R3 has no
+SDRAM, so the ZX Next gets **1 MB of RAM in the FPGA's block RAM** (`bram_zxn.vhd`), the memory
+of an unexpanded ZX Next: NextZXOS shows 768K. Addresses above 1 MB read as 0xFF and ignore
+writes, so NextZXOS's RAM test sees a 1 MB machine. The R3 board top routes the SD cards through
+the core as on R4-R6. R4, R5 and R6 are unchanged (their SDRAM constraints moved to
+`CORE/CORE-SDRAM.xdc`).
+
+Tested on an R6 with the same block RAM instead of the SDRAM: NextZXOS boots, `.MEM` shows 768K,
+Warhawk Next runs. **Not yet run on an R3**: R3 owners, please report.
+
 Version 1.0 - October 2026
 ==========================
 

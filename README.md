@@ -26,16 +26,17 @@ below).
 
 * **R4 and R5:** the core builds for them, but nobody has tested it on these boards yet. If you
   have one, a test report is very welcome.
-* **R3 / R3A is not supported.** The ZX Next needs 2 MB of fast RAM. On the R4, R5 and R6 that
-  RAM is the board's SDRAM chip, which the R3 and R3A do not have. Their other memory, the
-  HyperRAM, is too slow for a CPU running at up to 28 MHz, and the MEGA65 framework already uses
-  it for the HDMI picture. An R3 version with 1 MB (like an unexpanded ZX Next) held in the
-  FPGA's own memory may be possible later; it has not been built or tested.
+* **R3 / R3A: test build, 1 MB.** The R3 and R3A have no SDRAM, so on them the ZX Next gets
+  **1 MB of RAM inside the FPGA**, like an unexpanded ZX Next (NextZXOS shows 768K of RAM).
+  Software that needs 2 MB does not run. This memory design was tested on an R6 (NextZXOS,
+  `.MEM`, Warhawk Next), but the R3 build itself has **not run on an R3 yet**. It is a separate
+  test release: [MegaZXNext R3 test (1 MB)](https://github.com/freemchr/MegaZXNext/releases/tag/v1.0-r3-test).
+  R3 owners: please tell us how it went.
 
 Requirements
 ------------
 
-* A MEGA65 R6 (R4/R5 untested, see above).
+* A MEGA65 R6 (R4/R5 untested; R3/R3A: separate 1 MB test build, see above).
 * Either an **image of a ZX Next SD card** on the MEGA65's SD card (FAT32), or a **real ZX Next
   SD card** (FAT32) in one of the MEGA65's SD card slots. No ROMs or system files are included
   in this core: the ZX Next loads its firmware, ROMs and NextZXOS from that card, just like the
@@ -129,7 +130,8 @@ Installation
    back slot (see "Which SD card is used" above).
 2. **The core.** Download the zip from the release (`megazxnext_v1.0_r4_r5_r6.zip`), unzip it
    and take the `.cor` file for your board (`megazxnext_r6.cor` for an R6; `_r5`/`_r4` are
-   untested). Flash it into a core slot with the MEGA65's flash menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
+   untested). For an R3/R3A, take `megazxnext_r3_test.zip` from the
+   [R3 test release](https://github.com/freemchr/MegaZXNext/releases/tag/v1.0-r3-test) instead. Flash it into a core slot with the MEGA65's flash menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
 3. Start the core. The welcome screen shows the most important keys; press Space and the
    ZX Next boots.
 
@@ -179,7 +181,8 @@ Reset ZX Next and the help pages. The settings are not saved: the ZX Next owns t
 Known issues
 ------------
 
-* Only tested on R6. R4/R5 are untested.
+* Only tested on R6. R4/R5 are untested. The R3/R3A test build has not run on an R3 yet, and
+  it has 1 MB of RAM (software that needs 2 MB does not run).
 * Not tested yet: a real ZX Next SD card (direct mode), VGA output, F13, the NMI keys (F9/F11),
   the **Reset ZX Next** menu item.
 * Real ZX Next SD cards must be FAT32; FAT16 cards are not supported.
@@ -192,7 +195,7 @@ Reporting issues
 ----------------
 
 Please open an issue at https://github.com/freemchr/MegaZXNext/issues with your MEGA65 board
-revision (R4/R5/R6), the image you use, and what you did.
+revision (R3/R3A/R4/R5/R6), the image you use, and what you did.
 
 Building
 --------
