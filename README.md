@@ -128,9 +128,9 @@ Installation
 
    Or use a **real ZX Next SD card** (FAT32, `/TBBLUE.FW` in its root) instead: put it into the
    back slot (see "Which SD card is used" above).
-2. **The core.** Take the `.cor` file for your board from the release (`megazxnext_r6.cor`
-   for an R6; `_r5`/`_r4` are untested; `megazxnext_v1.0_r4_r5_r6.zip` has all three) and flash it into a core slot with the MEGA65's flash
-   menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
+2. **The core.** Download the zip from the release (`megazxnext_v1.0_r4_r5_r6.zip`), unzip it
+   and take the `.cor` file for your board (`megazxnext_r6.cor` for an R6; `_r5`/`_r4` are
+   untested). Flash it into a core slot with the MEGA65's flash menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
 3. Start the core. The welcome screen shows the most important keys; press Space and the
    ZX Next boots.
 
