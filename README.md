@@ -1,5 +1,4 @@
-MegaZXNext
-==========
+<p align="center"><img src="doc/assets/megazxnext-badge.png" alt="MegaZXNext" width="700"></p>
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-cjf077-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/cjf077)
 
