@@ -56,10 +56,25 @@ There are two ways to give the ZX Next its SD card:
    (the MEGA65 needs to read the card at startup): copy the files of a FAT16 card onto a FAT32
    card.
 
-**Which slot:** the MEGA65 uses the card in the **external slot** (at the back) if one is
-inserted, otherwise the **internal card** in the bottom tray. The image or the real ZX Next card
-must be on the card that is in use. A handy setup for a real ZX Next card: leave the MEGA65's
-own card in the bottom tray and put the ZX Next card into the back slot.
+### Which SD card is used
+
+The core uses **one** SD card, chosen once when it starts:
+
+1. The card in the **back slot**, if one is inserted.
+2. Otherwise the card in the **bottom tray**.
+
+On that card it looks first for `/zxnext/boot.vhd`, then `/zxnext/boot.img`. If neither is
+there but `/TBBLUE.FW` is, it uses the card itself as a real ZX Next card. The other slot is not
+used at all.
+
+| Back slot | Bottom tray | What the ZX Next uses |
+|---|---|---|
+| empty | MEGA65 card with `/zxnext/boot.img` | the image on the bottom tray card |
+| MEGA65 card with `/zxnext/boot.img` | anything | the image on the back slot card |
+| real ZX Next card | MEGA65 card | the real ZX Next card (the tray card is not used) |
+| empty | real ZX Next card | the real ZX Next card |
+
+Don't swap or remove cards while the core is running: switch the MEGA65 off first.
 
 ### The image file
 
@@ -109,12 +124,12 @@ Installation
 
    Copy it to the MEGA65's SD card as **`/zxnext/boot.vhd`** or **`/zxnext/boot.img`**. The
    file does not need to be contiguous (up to 512 fragments are fine). Remember: a card in the
-   back slot is used before the card in the bottom tray.
+   back slot is used before the card in the bottom tray (see "Which SD card is used" above).
 
    Or use a **real ZX Next SD card** (FAT32, `/TBBLUE.FW` in its root) instead: put it into the
-   back slot (see "Which slot" above).
+   back slot (see "Which SD card is used" above).
 2. **The core.** Take the `.cor` file for your board from the release (`megazxnext_r6.cor`
-   for an R6; `_r5`/`_r4` are untested) and flash it into a core slot with the MEGA65's flash
+   for an R6; `_r5`/`_r4` are untested; `megazxnext_v1.0_r4_r5_r6.zip` has all three) and flash it into a core slot with the MEGA65's flash
    menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
 3. Start the core. The welcome screen shows the most important keys; press Space and the
    ZX Next boots.
