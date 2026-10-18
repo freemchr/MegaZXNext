@@ -5,8 +5,7 @@ First full release of **MegaZXNext**, a ZX Next core for the MEGA65, for the MEG
 with test builds for **R4** and **R5**. Based on ZXNext_MiSTer (ZX Next core 3.02.00, matches
 System/Next 24.11) and MiSTer2MEGA65 V2.0.1.
 
-Version 1.0 is the V0.3 test build (below) with the version number changed and the screens
-saying where the image goes. The V0.3 build was reported working on an R6, with the grey screen
+Version 1.0 is the V0.3 test build (below) plus support for real ZX Next SD cards. The V0.3 build was reported working on an R6, with the grey screen
 of V0.2 gone. R4 and R5 have not been tested: if you have one, please report how it went.
 
 * Renamed to **MegaZXNext** ("a ZX Next core for the MEGA65"): the System/Next licence does
@@ -17,10 +16,15 @@ of V0.2 gone. R4 and R5 have not been tested: if you have one, please report how
   bytes depending on the chip and temperature, and the ZX Next stopped at a grey screen after
   some resets. The SDRAM clock pin now runs 1.4 ns later (PLL), and the SDRAM I/O timing is
   constrained, so Vivado checks the margins on every build.
-* The welcome and help screens say that the image goes on the **external SD card** (the slot at
-  the back of the MEGA65).
+* **Real ZX Next SD cards:** besides an image file, the core can now use a real ZX Next SD card
+  (FAT32) directly, for example the card from a real ZX Spectrum Next. It is used when the card
+  has no `/zxnext/boot.vhd` or `/zxnext/boot.img` but has `/TBBLUE.FW` in its root; the ZX
+  Next's SPI then goes straight to the card. FAT16 cards are not supported. Not yet tested on
+  hardware.
+* The welcome and help screens say which card is used: the one in the back slot if a card is in
+  it, otherwise the one in the bottom tray.
 
-Not tested yet (please report): VGA output, F13 (CPU speed), the NMI keys F9/F11, +3 disk images
+Not tested yet (please report): a real ZX Next SD card, VGA output, F13 (CPU speed), the NMI keys F9/F11, +3 disk images
 (.DSK), the **Reset ZX Next** menu item, R4 and R5.
 
 Known issues: no mouse; joystick modes are ZX Next settings stored in the image (see the README),

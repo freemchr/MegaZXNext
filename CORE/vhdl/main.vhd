@@ -87,6 +87,7 @@ entity main is
       -- The ZX Next's SD card: an image file on the MEGA65's SD card (see sd_image.vhd). The image
       -- is located by the QNICE Shell; the ZX Next is held in reset until it is mounted.
       img_enable_i            : in  std_logic;              -- 1 = mounted: the core owns the card
+      img_direct_i            : in  std_logic;              -- 1 = no image: the card is a real ZX Next SD card
       img_size_i              : in  std_logic_vector(31 downto 0);   -- in sectors
       img_ext_count_i         : in  std_logic_vector(9 downto 0);    -- number of extents
       img_ext_addr_o          : out std_logic_vector(8 downto 0);    -- extent table (in mega65.vhd)
@@ -199,6 +200,10 @@ architecture synthesis of main is
    signal sd_mosi             : std_logic;
    signal sd_miso             : std_logic;
    signal img_miso            : std_logic;
+   signal img_use_image       : std_logic;
+   signal img_cs_n            : std_logic;
+   signal img_sclk            : std_logic;
+   signal img_mosi            : std_logic;
    signal img_cpu_wait        : std_logic;
    signal img_active          : std_logic;
    signal cpu_wait            : std_logic;
@@ -457,8 +462,11 @@ begin
 
    ---------------------------------------------------------------------------------------------
    -- SD card: SD0 is the image on the MEGA65's SD card, SD1 has no card (as on MiSTer without
-   -- a second image)
+   -- a second image). Direct mode (img_direct_i): the MEGA65's SD card is a real ZX Next SD card
+   -- and SD0 is that card itself; the ZX Next's SPI goes straight to the pins, as on a real Next.
    ---------------------------------------------------------------------------------------------
+
+   img_use_image <= img_enable_i and not img_direct_i;
 
    i_sd_image : entity work.sd_image
       generic map (
@@ -467,7 +475,7 @@ begin
       port map (
          clk_i          => clk_main_i,
          reset_i        => reset_core,
-         enable_i       => img_enable_i,
+         enable_i       => img_use_image,
          size_i         => img_size_i,
          ext_count_i    => img_ext_count_i,
          ext_addr_o     => img_ext_addr_o,
@@ -476,16 +484,22 @@ begin
          sck_i          => sd_sclk,
          mosi_i         => sd_mosi,
          miso_o         => img_miso,
-         sd_cs_n_o      => sd_cs_n_o,
-         sd_sclk_o      => sd_sclk_o,
-         sd_mosi_o      => sd_mosi_o,
+         sd_cs_n_o      => img_cs_n,
+         sd_sclk_o      => img_sclk,
+         sd_mosi_o      => img_mosi,
          sd_miso_i      => sd_miso_i,
          cpu_wait_o     => img_cpu_wait,
          active_o       => img_active,
          err_cnt_o      => img_err_cnt_o
       ); -- i_sd_image
 
-   sd_miso  <= img_miso when sd_cs0_n = '0' else '1';
+   sd_cs_n_o <= sd_cs0_n  when img_direct_i = '1' else img_cs_n;
+   sd_sclk_o <= sd_sclk   when img_direct_i = '1' else img_sclk;
+   sd_mosi_o <= sd_mosi   when img_direct_i = '1' else img_mosi;
+
+   sd_miso  <= '1'       when sd_cs0_n = '1'     else
+               sd_miso_i when img_direct_i = '1' else
+               img_miso;
 
    cpu_wait <= ram_a_wait or img_cpu_wait;
 

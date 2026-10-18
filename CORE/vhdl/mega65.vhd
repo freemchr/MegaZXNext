@@ -303,8 +303,9 @@ signal main_scandoubler       : std_logic;
 signal main_sd_active         : std_logic;
 
 -- SD card image (see sd_image.vhd), from the QNICE registers below
-signal main_img_cfg           : std_logic_vector(43 downto 0);
+signal main_img_cfg           : std_logic_vector(44 downto 0);
 signal main_img_enable        : std_logic;
+signal main_img_direct        : std_logic;               -- 1 = real ZX Next SD card, no image
 signal main_img_slot          : std_logic;               -- 1 = back slot, 0 = bottom tray
 signal main_img_size          : std_logic_vector(31 downto 0);
 signal main_img_ext_count     : std_logic_vector(9 downto 0);
@@ -331,6 +332,8 @@ signal main_sd_miso           : std_logic;
 --                      Write this last; nothing else may change while it is 1.
 --    0x0006            (read only) number of sectors that failed three times
 --    0x0007            number of extents (1 .. 512)
+--    0x0008            1 = direct: no image, the card in the slot is a real ZX Next SD card and
+--                      the ZX Next's SPI goes straight to it (size and extents are not used)
 --    0x0010 / 0x0011   extent: first virtual sector, low / high word
 --    0x0012 / 0x0013   extent: first physical sector, low / high word
 --    0x0014            write: store the extent (0x0010 .. 0x0013) as table entry n (0 .. 511)
@@ -346,6 +349,7 @@ type img_ext_ram_t is array (0 to 511) of std_logic_vector(63 downto 0);
 signal img_ext_ram            : img_ext_ram_t;
 signal qnice_img_slot         : std_logic := '0';
 signal qnice_img_enable       : std_logic := '0';
+signal qnice_img_direct       : std_logic := '0';
 signal qnice_img_err_cnt      : std_logic_vector(15 downto 0);
 
 begin
@@ -513,6 +517,7 @@ begin
          rtc_i                => main_rtc_i,
 
          img_enable_i         => main_img_enable,
+         img_direct_i         => main_img_direct,
          img_size_i           => main_img_size,
          img_ext_count_i      => main_img_ext_count,
          img_ext_addr_o       => main_img_ext_addr,
@@ -546,19 +551,21 @@ begin
    -- The ZX Next's SD card is an image file on the MEGA65's SD card. The QNICE Shell finds it at
    -- startup (m2m-rom.asm) and passes its position through the C_DEV_ZXN_IMG registers. From
    -- then on the core drives the slot that holds the image; QNICE does not use the card any more.
+   -- Without an image, a real ZX Next SD card (TBBLUE.FW in its root) is used directly.
    ---------------------------------------------------------------------------------------------
 
    i_cdc_img_cfg : entity work.cdc_stable
       generic map (
-         G_DATA_SIZE => 44
+         G_DATA_SIZE => 45
       )
       port map (
          src_clk_i   => qnice_clk_i,
-         src_data_i  => qnice_img_enable & qnice_img_slot & qnice_img_ext_count & qnice_img_size,
+         src_data_i  => qnice_img_direct & qnice_img_enable & qnice_img_slot & qnice_img_ext_count & qnice_img_size,
          dst_clk_i   => main_clk,
          dst_data_o  => main_img_cfg
       ); -- i_cdc_img_cfg
 
+   main_img_direct    <= main_img_cfg(44);
    main_img_enable    <= main_img_cfg(43);
    main_img_slot      <= main_img_cfg(42);
    main_img_ext_count <= main_img_cfg(41 downto 32);
@@ -640,6 +647,7 @@ begin
                when 4      => qnice_img_slot                       <= qnice_dev_data_i(0);
                when 5      => qnice_img_enable                     <= qnice_dev_data_i(0);
                when 7      => qnice_img_ext_count                  <= qnice_dev_data_i(9 downto 0);
+               when 8      => qnice_img_direct                     <= qnice_dev_data_i(0);
                when 16#10# => qnice_img_ext_stage(15 downto 0)     <= qnice_dev_data_i;
                when 16#11# => qnice_img_ext_stage(31 downto 16)    <= qnice_dev_data_i;
                when 16#12# => qnice_img_ext_stage(47 downto 32)    <= qnice_dev_data_i;
@@ -676,6 +684,7 @@ begin
             when 5      => qnice_dev_data_o <= x"000" & "000" & qnice_img_enable;
             when 6      => qnice_dev_data_o <= qnice_img_err_cnt;
             when 7      => qnice_dev_data_o <= "000000" & qnice_img_ext_count;
+            when 8      => qnice_dev_data_o <= x"000" & "000" & qnice_img_direct;
             when others => null;
          end case;
       end if;

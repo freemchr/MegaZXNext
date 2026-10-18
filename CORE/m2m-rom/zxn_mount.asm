@@ -21,6 +21,11 @@
 ; mega65.vhd), "mounted" last, and the core takes over the SD card. QNICE
 ; must not use the SD card afterwards.
 ;
+; Without an image, a real ZX Next SD card (TBBLUE.FW in its root, FAT32) is
+; used directly: the core passes the ZX Next SPI straight to the card
+; (register 8 of C_DEV_ZXN_IMG = direct). The card must be in the slot that
+; is active (the back slot if a card is in it, otherwise the bottom tray).
+;
 ; Output: R8 = 0: OK, otherwise pointer to an error message
 ;         R9 = 0 or error code
 ; ----------------------------------------------------------------------------
@@ -53,8 +58,43 @@ _ZXNM_OPEN      MOVE    ZXN_PATH_VHD, R10
                 RSUB    _ZXN_FOPEN, 1
                 CMP     0, R10
                 RBRA    _ZXNM_SIZE, Z
-                MOVE    R10, R9
+                MOVE    R10, R1                 ; R1: error code
+                MOVE    ZXN_PATH_FW, R10        ; a real ZX Next SD card?
+                RSUB    _ZXN_FOPEN, 1
+                CMP     0, R10
+                RBRA    _ZXNM_DIRECT, Z
+                MOVE    R1, R9
                 MOVE    ZXN_ERR_NOFILE, R8
+                RBRA    _ZXNM_RET, 1
+
+                ; A real ZX Next SD card: the core uses the card directly
+_ZXNM_DIRECT    MOVE    HANDLE_DEV, R0          ; no buffered file any more
+                ADD     FAT32$DEV_BUFFERED_FDH, R0
+                MOVE    0, @R0
+                RSUB    _ZXN_SLOT, 1            ; R1: slot
+                MOVE    M2M$RAMROM_DEV, R0      ; select the core device
+                MOVE    ZXN_IMG_DEV, @R0
+                MOVE    M2M$RAMROM_4KWIN, R0
+                MOVE    0, @R0
+                MOVE    M2M$RAMROM_DATA, R0
+                ADD     5, R0
+                MOVE    0, @R0                  ; 5: not mounted
+                MOVE    M2M$RAMROM_DATA, R0
+                ADD     4, R0
+                MOVE    R1, @R0                 ; 4: slot
+                MOVE    M2M$RAMROM_DATA, R0
+                ADD     8, R0
+                MOVE    1, @R0                  ; 8: direct
+                MOVE    M2M$RAMROM_DATA, R0
+                ADD     5, R0
+                MOVE    1, @R0                  ; 5: mounted (last)
+                MOVE    ZXN_LOG_DIRECT, R8
+                SYSCALL(puts, 1)
+                MOVE    R1, R8
+                SYSCALL(puthex, 1)
+                SYSCALL(crlf, 1)
+                XOR     R8, R8
+                XOR     R9, R9
                 RBRA    _ZXNM_RET, 1
 
                 ; Size in sectors: R3|R2 (a VHD footer is part of it)
@@ -224,15 +264,13 @@ _ZXNM_DONE      MOVE    HANDLE_DEV, R0
                 ADD     FAT32$DEV_BUFFERED_FDH, R0
                 MOVE    0, @R0
 
-                ; Slot that holds the image: 1 = back slot, 0 = bottom tray
-                MOVE    M2M$CSR, R0
-                MOVE    @R0, R1
-                AND     M2M$CSR_SD_ACTIVE, R1
-                RBRA    _ZXNM_SLOT, Z
-                MOVE    1, R1
+                RSUB    _ZXN_SLOT, 1            ; R1: slot that holds the image
 
                 ; Hand the image over to the core: mounted is written last
-_ZXNM_SLOT      MOVE    M2M$RAMROM_DATA, R0
+                MOVE    M2M$RAMROM_DATA, R0
+                ADD     8, R0
+                MOVE    0, @R0                  ; 8: not direct
+                MOVE    M2M$RAMROM_DATA, R0
                 ADD     2, R0
                 MOVE    ZXN_SECTORS, R2
                 MOVE    @R2++, @R0++            ; 2, 3: size low, high
@@ -338,6 +376,15 @@ _ZXN_SEEKFAT    MOVE    R6, R8                  ; 128 entries per FAT sector
                 RSUB    _ZXN_RDFAT, 1
                 RET
 
+; Slot of the active SD card: R1 = 1 back slot, 0 bottom tray. Runs in the
+; bank of the caller.
+_ZXN_SLOT       MOVE    M2M$CSR, R1
+                MOVE    @R1, R1
+                AND     M2M$CSR_SD_ACTIVE, R1
+                RBRA    _ZXN_SLOT_RET, Z
+                MOVE    1, R1
+_ZXN_SLOT_RET   RET
+
 ; Open the file R10 as ZXN_FH; output: R10 = 0 or error code
 _ZXN_FOPEN      MOVE    HANDLE_DEV, R8
                 MOVE    ZXN_FH, R9
@@ -374,12 +421,14 @@ ZXN_EXT_MAX     .EQU    512                     ; size of the extent table
 
 ZXN_PATH_VHD    .ASCII_W "/ZXNEXT/BOOT.VHD"
 ZXN_PATH_IMG    .ASCII_W "/ZXNEXT/BOOT.IMG"
+ZXN_PATH_FW     .ASCII_W "/TBBLUE.FW"
 
 ZXN_LOG_START   .ASCII_W "ZX Next: mounting the SD card image\n"
 ZXN_LOG_LBA     .ASCII_W "ZX Next: image at sector 0x"
 ZXN_LOG_SIZE    .ASCII_W ", sectors 0x"
 ZXN_LOG_SLOT    .ASCII_W ", slot "
 ZXN_LOG_EXT     .ASCII_W ", extents 0x"
+ZXN_LOG_DIRECT  .ASCII_W "ZX Next: no image, real ZX Next SD card, slot "
 ZXN_LOG_CORRUPT .ASCII_W "ZX Next: broken FAT chain, next cluster 0x"
 
 ZXN_ERR_MOUNT   .ASCII_P "Cannot mount the SD card.\n\n"
@@ -388,12 +437,16 @@ ZXN_HELP        .ASCII_P "The ZX Next needs an image of its\n"
                 .ASCII_P "(FAT32), for example the boot.vhd of\n"
                 .ASCII_P "the MiSTer core:\n\n"
                 .ASCII_P "   /zxnext/boot.vhd   or\n"
-                .ASCII_W "   /zxnext/boot.img\n"
-ZXN_ERR_NOFILE  .ASCII_P "ZX Next SD card image not found.\n\n"
+                .ASCII_P "   /zxnext/boot.img\n\n"
+                .ASCII_P "or a real ZX Next SD card (FAT32).\n"
+                .ASCII_W "FAT16 cards are not supported.\n"
+ZXN_ERR_NOFILE  .ASCII_P "No ZX Next SD card found.\n\n"
                 .ASCII_P "Copy the image of a ZX Next\n"
                 .ASCII_P "SD card to the MEGA65 SD card as\n\n"
                 .ASCII_P "   /zxnext/boot.vhd   or\n"
-                .ASCII_W "   /zxnext/boot.img\n"
+                .ASCII_P "   /zxnext/boot.img\n\n"
+                .ASCII_P "or insert a real ZX Next SD card\n"
+                .ASCII_W "(with /TBBLUE.FW on it).\n"
 ZXN_ERR_EMPTY   .ASCII_W "The ZX Next SD card image is empty.\n"
 ZXN_ERR_READ    .ASCII_W "Error while reading the SD card.\n"
 ZXN_ERR_MANY    .ASCII_P "The ZX Next SD card image is in more\n"

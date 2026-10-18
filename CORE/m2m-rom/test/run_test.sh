@@ -9,6 +9,7 @@
 #   2b. more than 512 extents: refused
 #   3. contiguous /zxnext/boot.vhd only
 #   4. no image
+#   5. no image, but /TBBLUE.FW in the root: a real ZX Next SD card, used directly
 # The expected first sector and size are computed independently from the image (python).
 #
 # Needs: gcc, mtools, mkfs.fat (dosfstools), sfdisk, python3. Run from this directory.
@@ -78,7 +79,7 @@ if len(ext) > 512: print('MANY'); sys.exit()
 for v, cl in ext:
     print('EXT: %08X %08X' % (v, clus_lba + (cl - 2) * spc))
 sec = size // 512
-print('REGS: %04X %04X 0001 0001 0000 %04X' % (sec & 0xFFFF, sec >> 16, len(ext)))
+print('REGS: %04X %04X 0001 0001 0000 %04X 0000' % (sec & 0xFFFF, sec >> 16, len(ext)))
 first = clus_lba + (r[0] - 2) * spc
 carry = ((r[0] - 2) * spc & 0xFFFF) + (clus_lba & 0xFFFF) > 0xFFFF
 print('CARRY' if carry else 'NOCARRY')
@@ -96,7 +97,7 @@ check() {
     out=$(run "$img")
     exp=$(expect "$img" "$name")
     case $exp in
-        NONE) grep -q "RESULT: ZX Next SD card image not found" <<< "$out" ;;
+        NONE) grep -q "RESULT: No ZX Next SD card found" <<< "$out" ;;
         MANY) grep -q "RESULT: The ZX Next SD card image is in more" <<< "$out" ;;
         *)    grep -q "RESULT: 0000" <<< "$out" &&
               [ "$(grep -E '^(EXT|REGS):' <<< "$out" | sed 's/ *$//')" = "$(grep -E '^(EXT|REGS):' <<< "$exp")" ] ;;
@@ -171,5 +172,18 @@ check "boot.vhd" "$WORK/t3.img" boot.vhd
 # 4. no image
 make_image "$WORK/t4.img"
 check "no image" "$WORK/t4.img" boot.img
+
+# 5. a real ZX Next SD card: no image, /TBBLUE.FW in the root
+make_image "$WORK/t6.img"
+pattern 64K "$WORK/TBBLUE.FW"
+mcopy -i "$WORK/t6.img@@1048576" "$WORK/TBBLUE.FW" ::/TBBLUE.FW
+out=$(run "$WORK/t6.img")
+if grep -q "RESULT: 0000" <<< "$out" &&
+   grep -q "ZX Next: no image, real ZX Next SD card, slot 0001" <<< "$out" &&
+   [ "$(grep '^REGS:' <<< "$out" | sed 's/ *$//')" = "REGS: 0000 0000 0001 0001 0000 0000 0001" ]; then
+    echo "PASS  real ZX Next SD card (direct)"
+else
+    echo "FAIL  real ZX Next SD card (direct)"; echo "$out" | grep -E "ZX Next|RESULT|REGS|CODE"; fail=1
+fi
 
 exit $fail

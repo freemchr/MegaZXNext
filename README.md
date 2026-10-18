@@ -33,30 +33,41 @@ Requirements
 ------------
 
 * A MEGA65 R6 (R4/R5 untested, see above).
-* An SD card in the MEGA65's **external SD card slot** (at the back of the MEGA65).
-* On that card (FAT32): an **image of a ZX Next SD card**. No ROMs or
-  system files are included in this core: the ZX Next loads its firmware, ROMs and NextZXOS
-  from that image, just like the real machine loads them from its SD card.
+* Either an **image of a ZX Next SD card** on the MEGA65's SD card (FAT32), or a **real ZX Next
+  SD card** (FAT32) in one of the MEGA65's SD card slots. No ROMs or system files are included
+  in this core: the ZX Next loads its firmware, ROMs and NextZXOS from that card, just like the
+  real machine does.
 
 What goes on the SD card
 ------------------------
 
-> [!IMPORTANT]
-> **A real ZX Next SD card is not supported.** MegaZXNext cannot currently use a FAT32 SD card
-> prepared for the ZX Next directly (for example, a card from a real ZX Spectrum Next put into
-> the MEGA65). What it supports is an **image file** made from such a card: prepare the ZX Next
-> SD card, copy the whole card into an image file, and put that file on the MEGA65's SD card as
-> `/zxnext/boot.vhd` or `/zxnext/boot.img`.
+There are two ways to give the ZX Next its SD card:
 
+1. **An image file** (recommended): a byte-for-byte copy of a complete ZX Next SD card, stored on
+   the MEGA65's normal SD card next to everything else. The ZX Next only ever touches that file.
+2. **A real ZX Next SD card** (new in V1.0, not yet tested on hardware): a FAT32 card prepared
+   for the ZX Next, for example the card from a real ZX Spectrum Next, put into the MEGA65. The
+   core uses it when the card has no image on it but has `/TBBLUE.FW` in its root. The ZX Next
+   then reads and writes the card directly, as on a real Next. FAT16 cards are not supported
+   (the MEGA65 needs to read the card at startup): copy the files of a FAT16 card onto a FAT32
+   card.
 
-The ZX Next files must be on the **external SD card** of the MEGA65 (the slot at the back), not
-on the internal card in the bottom tray. That card (FAT32) needs one file for this core:
+**Which slot:** the MEGA65 uses the card in the **external slot** (at the back) if one is
+inserted, otherwise the **internal card** in the bottom tray. The image or the real ZX Next card
+must be on the card that is in use. A handy setup for a real ZX Next card: leave the MEGA65's
+own card in the bottom tray and put the ZX Next card into the back slot.
 
-| Path on the MEGA65 external SD card | What it is |
+### The image file
+
+The MEGA65 SD card (FAT32) needs one file:
+
+| Path on the MEGA65 SD card | What it is |
 |---|---|
 | `/zxnext/boot.vhd` or `/zxnext/boot.img` | an image (a byte-for-byte copy) of a complete ZX Next SD card |
 
-Inside that image, the ZX Next expects the **System/Next distribution**, exactly as on a real
+### What the ZX Next needs
+
+Inside the image (or on the real ZX Next card), the ZX Next expects the **System/Next distribution**, exactly as on a real
 ZX Spectrum Next. The files it needs at a minimum:
 
 | Path inside the image | What it is |
@@ -92,9 +103,12 @@ Installation
      [ZXNext_MiSTer](https://github.com/MiSTer-devel/ZXNext_MISTer)), or
    * an image file of a ZX Next SD card with the System/Next distribution (tested: 24.11).
 
-   Copy it to the MEGA65's **external SD card** (the slot at the back) as
-   **`/zxnext/boot.vhd`** or **`/zxnext/boot.img`**, and put that card into the external slot.
-   The file does not need to be contiguous (up to 512 fragments are fine).
+   Copy it to the MEGA65's SD card as **`/zxnext/boot.vhd`** or **`/zxnext/boot.img`**. The
+   file does not need to be contiguous (up to 512 fragments are fine). Remember: a card in the
+   back slot is used before the card in the bottom tray.
+
+   Or use a **real ZX Next SD card** (FAT32, `/TBBLUE.FW` in its root) instead: put it into the
+   back slot (see "Which slot" above).
 2. **The core.** Take the `.cor` file for your board from the release (`megazxnext_r6.cor`
    for an R6; `_r5`/`_r4` are untested) and flash it into a core slot with the MEGA65's flash
    menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
@@ -148,7 +162,9 @@ Known issues
 ------------
 
 * Only tested on R6. R4/R5 are untested.
-* Not tested yet: VGA output, F13, the NMI keys (F9/F11), the **Reset ZX Next** menu item.
+* Not tested yet: a real ZX Next SD card (direct mode), VGA output, F13, the NMI keys (F9/F11),
+  the **Reset ZX Next** menu item.
+* Real ZX Next SD cards must be FAT32; FAT16 cards are not supported.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
   machine ID the core reports).

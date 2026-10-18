@@ -85,10 +85,10 @@ constant SCR_WELCOME : string :=
    "Powered by MiSTer2MEGA65 V2.0.1,\n" &
    "done by sy2002 and MJoergen in 2022\n\n" &
    "The ZX Next boots from an image of its SD\n" &
-   "card (e.g. the MiSTer boot.vhd) that is\n" &
-   "stored on the MEGA65 external SD card\n" &
-   "(back slot, FAT32) as\n" &
-   "/zxnext/boot.vhd or /zxnext/boot.img\n\n" &
+   "card (e.g. the MiSTer boot.vhd) on the\n" &
+   "MEGA65 SD card (FAT32) as /zxnext/boot.vhd\n" &
+   "or /zxnext/boot.img, or from a real ZX Next\n" &
+   "SD card. The back slot is used first.\n\n" &
    "    MEGA65 key        ZX Next\n" &
    "    " & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_5 & "\n" &
    "    Shift             Caps Shift\n" &
@@ -113,9 +113,10 @@ constant HELP_1 : string :=
    " Requires a MEGA65 R4, R5 or R6: the\n" &
    " ZX Next's 2 MB of RAM live in the SDRAM.\n\n" &
    " SD card: an image of a ZX Next SD card\n" &
-   " on the MEGA65 external SD card (back\n" &
-   " slot, FAT32) as\n" &
-   " /zxnext/boot.vhd or /zxnext/boot.img\n\n" &
+   " on the MEGA65 SD card (FAT32) as\n" &
+   " /zxnext/boot.vhd or /zxnext/boot.img,\n" &
+   " or a real ZX Next SD card (FAT32).\n" &
+   " A card in the back slot is used first.\n\n" &
    " Cursor right to learn more.       (1 of 2)\n" &
    " Press Space to close the help screen.";
 

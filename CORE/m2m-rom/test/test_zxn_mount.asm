@@ -49,9 +49,9 @@ _T_OK           MOVE    R0, R8
                 SYSCALL(crlf, 1)
                 MOVE    T_REGS, R8
                 SYSCALL(puts, 1)
-                MOVE    M2M$RAMROM_DATA, R0     ; 2 .. 7: size, slot, mounted, -, count
+                MOVE    M2M$RAMROM_DATA, R0     ; 2 .. 8: size, slot, mounted, -, count, direct
                 ADD     2, R0
-                MOVE    6, R1
+                MOVE    7, R1
 _T_REGS         MOVE    @R0++, R8
                 SYSCALL(puthex, 1)
                 MOVE    T_SPACE, R8

@@ -29,8 +29,7 @@ on the task, not on rediscovering the layout.
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
   three top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
 - **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **V1.0 is released**
-  (R6; R4/R5 builds included, untested). On R6: NextZXOS boots from `/zxnext/boot.img` on the
-  external SD card; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
+  (R6; R4/R5 builds included, untested). On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
   work. The V0.2 grey screen after resets was reported gone with the V0.3 build (SDRAM read hold
   timing fix, §3.2). Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
   on R6; R4/R5 are untested and need outside testers before they are called working.
@@ -183,6 +182,13 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
   (`main.vhd`). From then on the core drives the slot that holds the image (mux in `mega65.vhd`,
   framework outputs passed through the CORE by the patched board tops) and **QNICE must not touch
   the SD card any more**: no file browser, no vdrives, no settings file (`SAVE_SETTINGS = false`).
+- **Direct mode (real ZX Next SD card):** if neither image exists but `/TBBLUE.FW` does,
+  `ZXN_MOUNT` sets register 8 of `C_DEV_ZXN_IMG` (direct) instead of an extent table. `main.vhd`
+  then disables `sd_image` and wires the ZX Next's SPI (`sd_cs0_n`, SCK, MOSI, MISO) straight to
+  the slot, as on a real Next (SCK = CPU clock / 2, up to 14 MHz). FAT32 only (QNICE has to read
+  the card first). QNICE test case 5 covers the detection; not yet tested on hardware.
+- **Which slot:** M2M's `sdmux` uses the back slot if a card is in it, otherwise the bottom
+  tray; `ZXN_MOUNT` reads `M2M$CSR_SD_ACTIVE` and the core then drives that slot.
 - **Sector engine** (`sd_image.vhd`): virtual sector N is found in the extent table (linear
   search, a few µs), then read/written
   with M2M's `sd_controller` (`sd_spi.vhd`, the Shell's own SD controller) at 28 MHz (14 MHz SPI).
