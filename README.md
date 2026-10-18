@@ -27,7 +27,11 @@ below).
 
 * **R4 and R5:** the core builds for them, but nobody has tested it on these boards yet. If you
   have one, a test report is very welcome.
-* **R3 / R3A is not supported:** the ZX Next's RAM lives in the SDRAM, which the R3 does not have.
+* **R3 / R3A is not supported.** The ZX Next needs 2 MB of fast RAM. On the R4, R5 and R6 that
+  RAM is the board's SDRAM chip, which the R3 and R3A do not have. Their other memory, the
+  HyperRAM, is too slow for a CPU running at up to 28 MHz, and the MEGA65 framework already uses
+  it for the HDMI picture. An R3 version with 1 MB (like an unexpanded ZX Next) held in the
+  FPGA's own memory may be possible later; it has not been built or tested.
 
 Requirements
 ------------
