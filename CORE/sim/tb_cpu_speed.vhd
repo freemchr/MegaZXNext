@@ -1,7 +1,8 @@
 ----------------------------------------------------------------------------------
 -- MegaZXNext: ZX Next core for the MEGA65
 --
--- CPU speed change testbench: the ZX Next (zxnext_top_m65) with sdram_zxn and the SDRAM model,
+-- CPU speed change testbench: the ZX Next (zxnext_top_m65) with sdram_zxn and the SDRAM model
+-- (or, with G_BRAM, with bram_zxn: the R3's 1 MB of block RAM),
 -- running the test boot ROM of mk_cpu_speed_rom.py. The program lowers the CPU speed at different
 -- phases (28 -> 3.5/7/14, 14 -> 3.5/7, 7 -> 3.5 MHz), executes three INC HL after each change and
 -- stores L at 0xA000 + n. Every result must be 3. On R6 the opcode fetch that straddled a speed
@@ -22,7 +23,9 @@ library zxnext;
 
 entity tb_cpu_speed is
    generic (
-      G_RESULTS : natural := 48               -- must match mk_cpu_speed_rom.py
+      G_RESULTS : natural := 48;              -- must match mk_cpu_speed_rom.py
+      G_BRAM    : boolean := false;           -- true: bram_zxn (R3) instead of sdram_zxn + SDRAM model
+      G_T_BRAM  : natural := 15000            -- bram_zxn: CLK_28 edge -> ram_a_do at the ZX Next (ps)
    );
 end entity tb_cpu_speed;
 
@@ -32,6 +35,16 @@ architecture sim of tb_cpu_speed is
    constant C_T_OUT  : time := 4.0 ns;       -- FPGA -> SDRAM pins
    constant C_T_IN   : time := 1.0 ns;       -- SDRAM pins -> FPGA
    constant C_T_PATH : time := 17.7 ns;      -- ram_a_wait / ram_a_do to the ZX Next (2 sdram_clk cycles)
+
+   function sel_time(b : boolean; t_true, t_false : time) return time is
+   begin
+      if b then
+         return t_true;
+      end if;
+      return t_false;
+   end function sel_time;
+
+   constant C_T_A    : time := sel_time(G_BRAM, G_T_BRAM * 1 ps, C_T_PATH);
 
    signal clk_112    : std_logic := '0';
    signal clk_112_out: std_logic;            -- clk_112, 1.4 ns late (clk.vhd): SDRAM clock pin
@@ -108,8 +121,8 @@ begin
    end process div_proc;
 
    rst_112  <= '1', '0' after 200 ns;
-   a_wait_d <= transport a_wait after C_T_PATH;
-   a_do_d   <= transport a_do   after C_T_PATH;
+   a_wait_d <= transport a_wait after C_T_A;
+   a_do_d   <= transport a_do   after C_T_A;
 
    i_dut : entity zxnext.zxnext_top_m65
       port map (
@@ -161,6 +174,7 @@ begin
          esp_reset_o       => open
       );
 
+   gen_sdram : if not G_BRAM generate
    i_sdram_zxn : entity work.sdram_zxn
       port map (
          clk_i           => clk_112,
@@ -228,6 +242,22 @@ begin
          sdram_dqmh_i  => p_dqmh,
          sdram_dq_io   => p_dq
       );
+   end generate gen_sdram;
+
+   gen_bram : if G_BRAM generate
+      i_bram_zxn : entity work.bram_zxn
+         port map (
+            clk_i           => clk_28,
+            ram_a_addr_i    => a_addr,
+            ram_a_req_i     => a_req,
+            ram_a_rd_n_i    => a_rd_n,
+            ram_a_di_i      => a_di,
+            ram_a_do_o      => a_do,
+            ram_a_wait_o    => a_wait,
+            ram_b_addr_i    => b_addr,
+            ram_b_do_o      => b_do
+         );
+   end generate gen_bram;
 
    -- results: writes to 0xA000.. (bank 2 at 0x8000 = physical 0x048000, so 0x04A000..)
    mon_proc : process (clk_28)

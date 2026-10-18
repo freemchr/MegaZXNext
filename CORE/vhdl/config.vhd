@@ -110,8 +110,8 @@ constant HELP_1 : string :=
    " Port of ZXNext_MISTer (Alvin Albrecht,\n" &
    " Victor Trucco, Fabio Belavenuto, Sorgelig)\n" &
    " Powered by MiSTer2MEGA65\n\n" &
-   " Requires a MEGA65 R4, R5 or R6: the\n" &
-   " ZX Next's 2 MB of RAM live in the SDRAM.\n\n" &
+   " R4, R5, R6: 2 MB of RAM (in the SDRAM).\n" &
+   " R3/R3A: 1 MB (like an unexpanded Next).\n\n" &
    " SD card: an image of a ZX Next SD card\n" &
    " on the MEGA65 SD card (FAT32) as\n" &
    " /zxnext/boot.vhd or /zxnext/boot.img,\n" &

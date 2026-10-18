@@ -368,6 +368,17 @@ architecture synthesis of mega65_r3 is
    signal i2c_sda                : std_logic := 'H';
    signal i2c_scl                : std_logic := 'H';
 
+   ---------------------------------------------------------------------------------------------
+   -- SD cards: the framework's outputs, passed through the ZX Next core
+   ---------------------------------------------------------------------------------------------
+
+   signal fw_sd_reset            : std_logic;
+   signal fw_sd_clk              : std_logic;
+   signal fw_sd_mosi             : std_logic;
+   signal fw_sd2_reset           : std_logic;
+   signal fw_sd2_clk             : std_logic;
+   signal fw_sd2_mosi            : std_logic;
+
 begin
 
    -----------------------------------------------------------------------------------------
@@ -509,14 +520,14 @@ begin
       kb_io0_o                => kb_io0_o,
       kb_io1_o                => kb_io1_o,
       kb_io2_i                => kb_io2_i,
-      sd_reset_o              => sd_reset_o,
-      sd_clk_o                => sd_clk_o,
-      sd_mosi_o               => sd_mosi_o,
+      sd_reset_o              => fw_sd_reset,
+      sd_clk_o                => fw_sd_clk,
+      sd_mosi_o               => fw_sd_mosi,
       sd_miso_i               => sd_miso_i,
       sd_cd_i                 => sd_cd_i,
-      sd2_reset_o             => sd2_reset_o,
-      sd2_clk_o               => sd2_clk_o,
-      sd2_mosi_o              => sd2_mosi_o,
+      sd2_reset_o             => fw_sd2_reset,
+      sd2_clk_o               => fw_sd2_clk,
+      sd2_mosi_o              => fw_sd2_mosi,
       sd2_miso_i              => sd2_miso_i,
       sd2_cd_i                => sd2_cd_i,
       joy_1_up_n_i            => fa_up_n_i,
@@ -874,7 +885,27 @@ begin
          --
          cart_addr_oe_o    => cart_addr_oe, -- 0 : tristate (i.e. input), 1 : output
          cart_a_i          => cart_a_in,
-         cart_a_o          => cart_a_out
+         cart_a_o          => cart_a_out,
+
+         --------------------------------------------------------------------
+         -- ZX Next specific board I/O (the R3 has no SDRAM)
+         --------------------------------------------------------------------
+
+         -- SD cards: back slot (sd_*) and bottom tray (sd2_*), and the framework's outputs for them
+         sd_reset_o        => sd_reset_o,
+         sd_clk_o          => sd_clk_o,
+         sd_mosi_o         => sd_mosi_o,
+         sd_miso_i         => sd_miso_i,
+         sd2_reset_o       => sd2_reset_o,
+         sd2_clk_o         => sd2_clk_o,
+         sd2_mosi_o        => sd2_mosi_o,
+         sd2_miso_i        => sd2_miso_i,
+         fw_sd_reset_i     => fw_sd_reset,
+         fw_sd_clk_i       => fw_sd_clk,
+         fw_sd_mosi_i      => fw_sd_mosi,
+         fw_sd2_reset_i    => fw_sd2_reset,
+         fw_sd2_clk_i      => fw_sd2_clk,
+         fw_sd2_mosi_i     => fw_sd2_mosi
       ); -- CORE
 
 end architecture synthesis;

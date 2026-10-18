@@ -221,7 +221,7 @@ port (
    cart_d_o                : out unsigned( 7 downto 0);
 
    --------------------------------------------------------------------------------------------------------
-   -- ZX Next specific board I/O (R4, R5, R6)
+   -- ZX Next specific board I/O (SD cards: R3 to R6, SDRAM: R4, R5, R6)
    --------------------------------------------------------------------------------------------------------
 
    -- SD card slots. The framework (QNICE) drives them, except the slot that holds the ZX Next's
@@ -354,12 +354,10 @@ signal qnice_img_err_cnt      : std_logic_vector(15 downto 0);
 
 begin
 
-   -- The ZX Next's RAM lives in the SDRAM and the core drives the SD card slot that holds its image:
-   -- only the R4, R5 and R6 board top files (M2M/vhdl/top_mega65-r4/5/6.vhd) wire them to the core.
-   -- R3 has no SDRAM.
-   assert G_BOARD /= "MEGA65_R3"
-      report "MegaZXNext needs a MEGA65 R4, R5 or R6: R3 has no SDRAM"
-      severity failure;
+   -- The ZX Next's RAM lives in the SDRAM (2 MB) on the R4, R5 and R6. The R3 has no SDRAM: there it
+   -- is 1 MB of block RAM (bram_zxn.vhd), the memory of an unexpanded ZX Next. The core drives the SD
+   -- card slot that holds the image: the patched board top files (M2M/vhdl/top_mega65-r3/4/5/6.vhd)
+   -- route the framework's SD outputs through the core.
 
    hr_core_write_o      <= '0';
    hr_core_read_o       <= '0';
@@ -458,6 +456,9 @@ begin
 
    -- main.vhd contains the actual MiSTer core
    i_main : entity work.main
+      generic map (
+         G_RAM_BRAM           => G_BOARD = "MEGA65_R3"
+      )
       port map (
          clk_main_i           => main_clk,
          clk_main_n_i         => main_clk_n,

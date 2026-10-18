@@ -4,7 +4,7 @@
 -- Wrapper for the MiSTer core that runs exclusively in the core's clock domain
 --
 -- Contains the ZX Next (zxnext_top_m65), the SDRAM controller for the ZX Next's
--- 2 MB of RAM, the ZX Next's SD card (an image file on the MEGA65's SD card, sd_image.vhd),
+-- 2 MB of RAM (R4/R5/R6; on the R3 1 MB of block RAM, bram_zxn.vhd), the ZX Next's SD card (an image file on the MEGA65's SD card, sd_image.vhd),
 -- the DS1307 RTC emulation and the conversion of audio, video, keyboard and joysticks
 -- between the ZX Next and the M2M framework.
 --
@@ -22,6 +22,9 @@ use work.video_modes_pkg.all;
 library zxnext;
 
 entity main is
+   generic (
+      G_RAM_BRAM              : boolean := false            -- true: 1 MB block RAM (R3) instead of the SDRAM
+   );
    port (
       clk_main_i              : in  std_logic;              -- 28 MHz
       clk_main_n_i            : in  std_logic;              -- 28 MHz, 180 degrees
@@ -323,41 +326,74 @@ begin
       ); -- i_zxnext_top
 
    ---------------------------------------------------------------------------------------------
-   -- SDRAM: 2 MB of ZX Next memory
+   -- ZX Next memory: 2 MB in the SDRAM (R4, R5, R6) or 1 MB of block RAM (R3)
    ---------------------------------------------------------------------------------------------
 
-   i_sdram : entity work.sdram_zxn
-      port map (
-         clk_i           => clk_sdram_i,
-         clk_out_i       => clk_sdram_out_i,
-         rst_i           => rst_sdram_i,
-         clk_28_i        => clk_main_i,
+   gen_sdram : if not G_RAM_BRAM generate
 
-         ram_a_addr_i    => ram_a_addr,
-         ram_a_req_i     => ram_a_req,
-         ram_a_rd_n_i    => ram_a_rd_n,
-         ram_a_di_i      => ram_a_wr_data,
-         ram_a_do_o      => ram_a_rd_data,
-         ram_a_wait_o    => ram_a_wait,
+      i_sdram : entity work.sdram_zxn
+         port map (
+            clk_i           => clk_sdram_i,
+            clk_out_i       => clk_sdram_out_i,
+            rst_i           => rst_sdram_i,
+            clk_28_i        => clk_main_i,
 
-         ram_b_addr_i    => ram_b_addr,
-         ram_b_req_i     => ram_b_req,
-         ram_b_do_o      => ram_b_rd_data,
+            ram_a_addr_i    => ram_a_addr,
+            ram_a_req_i     => ram_a_req,
+            ram_a_rd_n_i    => ram_a_rd_n,
+            ram_a_di_i      => ram_a_wr_data,
+            ram_a_do_o      => ram_a_rd_data,
+            ram_a_wait_o    => ram_a_wait,
 
-         sdram_clk_o     => sdram_clk_o,
-         sdram_cke_o     => sdram_cke_o,
-         sdram_cs_n_o    => sdram_cs_n_o,
-         sdram_ras_n_o   => sdram_ras_n_o,
-         sdram_cas_n_o   => sdram_cas_n_o,
-         sdram_we_n_o    => sdram_we_n_o,
-         sdram_ba_o      => sdram_ba_o,
-         sdram_a_o       => sdram_a_o,
-         sdram_dqml_o    => sdram_dqml_o,
-         sdram_dqmh_o    => sdram_dqmh_o,
-         sdram_dq_out_o  => sdram_dq_out_o,
-         sdram_dq_oe_n_o => sdram_dq_oe_n_o,
-         sdram_dq_in_i   => sdram_dq_in_i
-      ); -- i_sdram
+            ram_b_addr_i    => ram_b_addr,
+            ram_b_req_i     => ram_b_req,
+            ram_b_do_o      => ram_b_rd_data,
+
+            sdram_clk_o     => sdram_clk_o,
+            sdram_cke_o     => sdram_cke_o,
+            sdram_cs_n_o    => sdram_cs_n_o,
+            sdram_ras_n_o   => sdram_ras_n_o,
+            sdram_cas_n_o   => sdram_cas_n_o,
+            sdram_we_n_o    => sdram_we_n_o,
+            sdram_ba_o      => sdram_ba_o,
+            sdram_a_o       => sdram_a_o,
+            sdram_dqml_o    => sdram_dqml_o,
+            sdram_dqmh_o    => sdram_dqmh_o,
+            sdram_dq_out_o  => sdram_dq_out_o,
+            sdram_dq_oe_n_o => sdram_dq_oe_n_o,
+            sdram_dq_in_i   => sdram_dq_in_i
+         ); -- i_sdram
+   end generate gen_sdram;
+
+   gen_bram : if G_RAM_BRAM generate
+      i_bram : entity work.bram_zxn
+         port map (
+            clk_i           => clk_main_i,
+
+            ram_a_addr_i    => ram_a_addr,
+            ram_a_req_i     => ram_a_req,
+            ram_a_rd_n_i    => ram_a_rd_n,
+            ram_a_di_i      => ram_a_wr_data,
+            ram_a_do_o      => ram_a_rd_data,
+            ram_a_wait_o    => ram_a_wait,
+
+            ram_b_addr_i    => ram_b_addr,
+            ram_b_do_o      => ram_b_rd_data
+         ); -- i_bram
+
+      sdram_clk_o     <= '0';
+      sdram_cke_o     <= '0';
+      sdram_cs_n_o    <= '1';
+      sdram_ras_n_o   <= '1';
+      sdram_cas_n_o   <= '1';
+      sdram_we_n_o    <= '1';
+      sdram_ba_o      <= (others => '0');
+      sdram_a_o       <= (others => '0');
+      sdram_dqml_o    <= '1';
+      sdram_dqmh_o    <= '1';
+      sdram_dq_out_o  <= (others => '0');
+      sdram_dq_oe_n_o <= (others => '1');
+   end generate gen_bram;
 
    ---------------------------------------------------------------------------------------------
    -- Real time clock: DS1307 emulation on the ZX Next's I2C bus
