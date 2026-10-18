@@ -78,9 +78,10 @@ hand, then run `cd CORE/sim && make sd`.
 MiSTer2MEGA65
 -------------
 
-Framework version: V2.0.1. Only the three board top files are changed:
-`M2M/vhdl/top_mega65-r4.vhd`, `top_mega65-r5.vhd` and `top_mega65-r6.vhd`
-(R3 is stock and not supported). In each one:
+Framework version: V2.0.1. Only the four board top files are changed:
+`M2M/vhdl/top_mega65-r3.vhd`, `top_mega65-r4.vhd`, `top_mega65-r5.vhd` and
+`top_mega65-r6.vhd`. In R4-R6 both 1 and 2 below; in R3 (no SDRAM, the ZX Next
+RAM is block RAM) only 2:
 
 1. **SDRAM:** remove the SDRAM tie-offs, add a generate with the DQ tri-state
    buffers (`sdram_dq_out`/`sdram_dq_oe_n`/`sdram_dq_in`), and connect all

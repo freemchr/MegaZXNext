@@ -7,7 +7,7 @@ Use the shared project guide above (`AGENTS.md`) as the source of truth for this
 Things that most often trip up work here:
 
 - This is a **core**, not the M2M framework. `M2M/` is read-only except the three patched board
-  tops (R4/R5/R6) that route SDRAM and the SD slots to the core (AGENTS.md §4).
+  tops (R3-R6) that route SDRAM (R4-R6) and the SD slots to the core (AGENTS.md §4).
 - The ZX Next's SD card is an **image file** on the MEGA65 card; after startup the core drives the
   card and QNICE must not touch it (AGENTS.md §3.3).
 - Run the GHDL testbenches (`cd CORE/sim && make`) after any change to `zxnext_top_m65.vhd` (CPU

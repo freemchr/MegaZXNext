@@ -27,8 +27,8 @@ on the task, not on rediscovering the layout.
   by Alvin Albrecht, Fabio Belavenuto, Victor Trucco et al.; MiSTer port by Sorgelig.
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
-  three top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
-- **Status:** R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing. **V1.0 is released**
+  four top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
+- **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.0 is released**
   (R6; R4/R5 builds included, untested). On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
   work. The V0.2 grey screen after resets was reported gone with the V0.3 build (SDRAM read hold
   timing fix, §3.2). Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
@@ -37,10 +37,12 @@ on the task, not on rediscovering the layout.
 ### Target boards
 
 The ZX Next's 2 MB of RAM live in the MEGA65's **SDRAM**, which only exists on **R4, R5, R6**.
-`CORE/CORE-R3.xpr` exists, but the R3 top file is stock M2M and R3 has no SDRAM, so the core
-would have no RAM and no access to its SD card image. An `assert` in `mega65.vhd` makes the R3 build fail on purpose:
-**R3 is not a supported target**. The help screen says "Requires a
-MEGA65 R4, R5 or R6".
+The **R3 / R3A** has no SDRAM: there the ZX Next gets **1 MB of block RAM** (`bram_zxn.vhd`), the
+memory of an unexpanded ZX Next (NextZXOS reports 768K). `main.vhd`'s generic `G_RAM_BRAM`
+(set by `mega65.vhd` from `G_BOARD = "MEGA65_R3"`) chooses. The R3 build meets timing but has
+**not run on an R3** yet (the maintainer has no R3); the 1 MB machine itself was tested on an R6
+(upper 1 MB of the SDRAM hidden: NextZXOS boots, `.MEM` 768K, games run). 1 MB of block RAM uses
+256 of the 365 RAMB36: the R3 build is at 316.
 
 ---
 
@@ -53,7 +55,7 @@ MEGA65 R4, R5 or R6".
 ├── AUTHORS                 credits for everything the core uses
 ├── VERSIONS.md             this core's changelog (M2M's own is upstream)
 ├── M2M/                    the MiSTer2MEGA65 framework, V2.0.1. Read-only EXCEPT the
-│                           three board tops listed in §4. M2M/QNICE = QNICE submodule.
+│                           four board tops listed in §4. M2M/QNICE = QNICE submodule.
 ├── CORE/
 │   ├── ZXNext_MiSTer/      ← submodule, UNMODIFIED. All RTL is compiled from here (library "zxnext")
 │   │                         except the files that CORE/vhdl/zxnext/ replaces.
@@ -65,6 +67,7 @@ MEGA65 R4, R5 or R6".
 │   │   ├── config.vhd      OSM menu (30 lines), welcome screen, 2 help pages
 │   │   ├── keyboard.vhd    MEGA65 keyboard → ZX Next 8×7 membrane matrix
 │   │   ├── sdram_zxn.vhd   SDRAM controller (VHDL translation of MiSTer rtl/mister/sdram.sv)
+│   │   ├── bram_zxn.vhd    R3: 1 MB of ZX Next RAM in block RAM (no SDRAM on the R3)
 │   │   ├── sd_image.vhd    the ZX Next's SD card = image file on the MEGA65 card (sector engine)
 │   │   ├── sd_card_zxn.vhd virtual SPI SD card (VHDL translation of MiSTer sys/sd_card.sv)
 │   │   ├── zxn_dc_blocker.vhd  audio DC blocker
@@ -74,7 +77,8 @@ MEGA65 R4, R5 or R6".
 │   │       └── t80n.vhd            patched copy of rtl/cpu/t80n.vhd (vector-length fix Vivado needs)
 │   ├── m2m-rom/            QNICE Shell ROM (m2m-rom.asm: PREP_START mounts the SD card image)
 │   ├── sim/                GHDL testbenches: sdram_zxn (+ MJoergen's SDRAM model, MIT), sd_image
-│   ├── CORE.xdc            core clocks, CPU BUFGMUX clocks, multicycles, SDRAM IOB packing
+│   ├── CORE.xdc            core clocks, CPU BUFGMUX clocks, multicycles, SD pins (all boards)
+│   ├── CORE-SDRAM.xdc      SDRAM multicycles, IOB packing, I/O timing (R4/R5/R6 .xpr only)
 │   └── CORE-R{3,4,5,6}.xpr Vivado 2026.1 projects (same sources, different top/XDC/G_BOARD)
 └── doc/
     ├── m2m/                M2M conventions; exceptions.md = how to re-apply our changes on updates
@@ -88,7 +92,7 @@ MEGA65 R4, R5 or R6".
 ## 3. Architecture
 
 ```
-M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD outputs via CORE)
+M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 SD outputs via CORE)
 ├── i_framework : framework.vhd        stock M2M; QNICE has both SD slots until the image is mounted
 └── CORE : MEGA65_Core (CORE/vhdl/mega65.vhd)
       ├── clk_gen : clk.vhd            MMCM 100 MHz → 700 MHz VCO → 112 / 28 / 28∠180 / 14 / 7 MHz
@@ -97,7 +101,8 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
       ├── i_main : main.vhd            28 MHz domain
       │     ├── i_zxnext_top : zxnext_top_m65 (library zxnext) → the MiSTer ZX Next RTL
       │     ├── i_sd_image : sd_image  SD0 = virtual card (sd_card_zxn) served from the image
-      │     ├── i_sdram : sdram_zxn    112 MHz, 2 MB, ports A (CPU/DMA) and B (Layer 2)
+      │     ├── gen_sdram.i_sdram : sdram_zxn  112 MHz, 2 MB, ports A (CPU/DMA) and B (Layer 2)
+      │     │   (R3: gen_bram.i_bram : bram_zxn, 28 MHz, 1 MB)
       │     ├── rtc (MiSTer)           DS1307 emulation fed by M2M's main_rtc_i
       │     ├── keyboard.vhd           membrane matrix
       │     └── zxn_dc_blocker         audio
@@ -125,21 +130,28 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED on R4/R5/R6: SDRAM to CORE, SD o
   switches the BUFGMUX from `zxn_cpu_speed` (not the delayed `zxn_cpu_speed2`) and keeps `CLK_i0`
   from rising for 15 CLK_28 cycles after a speed change. `make speed` in `CORE/sim` tests it (48
   speed drops at different phases); run it after touching the CPU clock.
-  **These XDC lines name hierarchical cells (`CORE/i_main/i_zxnext_top/...`, `CORE/i_main/i_sdram/*`);
+  **These XDC lines name hierarchical cells (`CORE/i_main/i_zxnext_top/...`, `CORE/i_main/gen_sdram.i_sdram/*` in `CORE-SDRAM.xdc`);
   renaming an instance silently drops the constraint.** Check the Vivado critical warnings after
   any rename.
 - The video clock handed to M2M is the 28 MHz main clock: the pixel rate is 14 MHz, so
   `video_ce_o` is a 14 MHz enable. VGA_DX/DY = 720×576 is the scandoubled size.
 - `hr_high_i`/`hr_low_i` (flicker-free HDMI) are not used: the core clock is fixed.
 
-### 3.2 Memory (`CORE/vhdl/sdram_zxn.vhd`)
+### 3.2 Memory (`CORE/vhdl/sdram_zxn.vhd`; R3: `bram_zxn.vhd`)
 
+- **R3 / R3A:** `bram_zxn` is 1 MB of block RAM clocked by CLK_28, which is what the ZX Next was
+  designed for (an SRAM, "transactions complete after one cycle"): port A writes or reads on the
+  rising edge where `ram_a_req` = '1' and holds the read data; no wait states. Port B reads every
+  cycle (Layer 2 latches 4 cycles after it changes the address). Above 1 MB reads 0xFF and writes
+  are ignored: a mirror would pass NextZXOS's RAM test and corrupt memory later. `make speed_bram`
+  runs the CPU speed test against it (passes up to 34 ns of data delay; real paths have ~2 ns slack
+  at 17.9 ns). The rest of this section is about the SDRAM (R4/R5/R6).
 - The 2 MB of ZX Next RAM live in the **SDRAM** (IS42S16320F-6BL). The core does **not** use
   HyperRAM (`C_HMAP_M2M` only). HyperRAM is still used by M2M for the HDMI scaler.
 - Read the file header first. Key points: 112 MHz, CL3, tRCD 3, an ACTIVE every 8 cycles,
   IOB-registered outputs and DQ input, SDRAM clock = inverted `sdram_out_clk` via ODDR
   (MJoergen's MEGA65 I/O scheme; he runs it at 166 MHz). Port A (CPU/DMA) has a wait signal.
-- **SDRAM I/O timing is constrained** in `CORE.xdc` (datasheet tAC/tOH/tIS/tIH, read data
+- **SDRAM I/O timing is constrained** in `CORE-SDRAM.xdc` (datasheet tAC/tOH/tIS/tIH, read data
   sampled CL+1 cycles after the READ). With the plain inverted controller clock (V0.2) the read
   hold slack was **-0.9 ns**: at 112 MHz the sample sat just after the data valid window. The
   1.4 ns of `sdram_out_clk` centre it. After a build, check the `sdram_pin_clk` paths; if you
@@ -246,9 +258,9 @@ was made from and carry over any changes. The `.xpr` files list each MiSTer RTL 
 explicitly (library `zxnext`), so files that upstream adds or renames must be added by hand
 to **all four** `.xpr`s.
 
-**M2M framework** (V2.0.1): only `M2M/vhdl/top_mega65-r4.vhd`, `-r5.vhd`, `-r6.vhd` are changed.
-Each one (a) removes the SDRAM tie-offs, adds the DQ tri-state generate and routes all `sdram_*`
-pins to the CORE, and (b) routes the framework's SD outputs (`sd_reset/clk/mosi`, `sd2_*`) through
+**M2M framework** (V2.0.1): only `M2M/vhdl/top_mega65-r3.vhd`, `-r4.vhd`, `-r5.vhd`, `-r6.vhd` are
+changed. R4-R6 (a) remove the SDRAM tie-offs, adds the DQ tri-state generate and routes all `sdram_*`
+pins to the CORE; all four (b) route the framework's SD outputs (`sd_reset/clk/mosi`, `sd2_*`) through
 the CORE's `fw_sd*_i` ports, which drives the pins (`sd_*`/`sd2_*` outputs); MISO and card detect
 go from the pins to the framework directly, MISO also to the CORE. Re-apply both when updating M2M. See
 `doc/m2m-v2.1.0-upgrade.md`.
@@ -267,7 +279,7 @@ git submodule update --init                 # CORE/ZXNext_MiSTer and M2M/QNICE
 ( cd CORE/m2m-rom && ./make_rom.sh )
 
 # Simulations (GHDL): SDRAM controller and SD card image
-( cd CORE/sim && make )                     # or: make sdram / make sd / make speed; make clean to reset
+( cd CORE/sim && make )                     # or: make sdram / sd / speed / speed_bram (R3 RAM); make clean
 
 # Bitstream: open CORE/CORE-R6.xpr (or R4/R5) in Vivado 2026.1 →
 #   Run Synthesis → Run Implementation → Generate Bitstream
@@ -329,7 +341,7 @@ check_timing -verbose -file check_timing.rpt
   clock names/pins and the multicycles assume 112 = 4 × 28 MHz).
 - `sdram_zxn` assumes its clock is exactly 4× and phase aligned with `CLK_28`; Layer 2 timing
   depends on that.
-- The CPU↔`sdram_clk` multicycles in `CORE.xdc` (2 cycles each way, from MiSTer's `ZXNext.sdc`)
+- The CPU↔`sdram_clk` multicycles in `CORE-SDRAM.xdc` (2 cycles each way, from MiSTer's `ZXNext.sdc`)
   and the `main_clk`→Port A multicycle are only correct because Port A samples and updates on
   even edges only (§3.2). Anything in `sdram_zxn` that reads `ram_a_*_i` or drives `ram_a_*_o`
   on another edge breaks them silently: STA still passes. The testbench catches it (garbage
@@ -372,7 +384,7 @@ framework, Vivado or hardware problems. Where it applies here:
 - OSM size: this core's OSM is 720x576 with a 16x16 font, i.e. 45x36 characters. Inside the frame
   a help line can be at most 43 characters (MegaST's 640x400 limits do not apply).
 - Resets: `main_reset_m2m_i`/`main_reset_core_i` also carry the QNICE CSR reset (lessons §3.4).
-- Board tops: R3 differs from R4-R6; the R3 build is blocked on purpose (§1).
+- Board tops: R3 differs from R4-R6 (no SDRAM, other controllers); its RAM is block RAM (§1, §3.2).
 - Release: no ROMs are shipped (the user supplies the ZX Next distribution on the SD card); no
   settings file is needed (`SAVE_SETTINGS = false`). Use `bit2core` from mega65-tools, not the 4 MB
   capped copy in M2M. Never call a board "working" before a tester with that board confirmed it.
