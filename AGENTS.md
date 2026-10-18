@@ -40,8 +40,9 @@ The ZX Next's 2 MB of RAM live in the MEGA65's **SDRAM**, which only exists on *
 The **R3 / R3A** has no SDRAM: there the ZX Next gets **1 MB of block RAM** (`bram_zxn.vhd`), the
 memory of an unexpanded ZX Next (NextZXOS reports 768K). `main.vhd`'s generic `G_RAM_BRAM`
 (set by `mega65.vhd` from `G_BOARD = "MEGA65_R3"`) chooses. The R3 build meets timing but has
-**not run on an R3** yet (the maintainer has no R3); the 1 MB machine itself was tested on an R6
-(upper 1 MB of the SDRAM hidden: NextZXOS boots, `.MEM` 768K, games run). 1 MB of block RAM uses
+**not run on an R3** yet (the maintainer has no R3). Tested on an R6: an R6 build with
+`G_RAM_BRAM` forced to true (bram_zxn instead of the SDRAM) boots NextZXOS, `.MEM` shows 768K and
+Warhawk Next (Layer 2) runs. Still unverified on an R3: its board top (SD routing) and controllers. 1 MB of block RAM uses
 256 of the 365 RAMB36: the R3 build is at 316.
 
 ---
