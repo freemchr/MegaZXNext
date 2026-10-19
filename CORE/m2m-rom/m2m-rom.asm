@@ -7,7 +7,8 @@
 ; The execution starts at the label START_FIRMWARE.
 ;
 ; Core specific: PREP_START finds the ZX Next SD card image on the MEGA65 SD
-; card and hands it to the core (see ZXN_MOUNT below and sd_image.vhd).
+; card and hands it to the core (see ZXN_MOUNT below and sd_image.vhd). The
+; options menu settings are saved by OSM_SEL_POST (see zxn_cfg.asm).
 ;
 ; MiSTer2MEGA65 done by sy2002 and MJoergen in 2022 and licensed under GPL v3
 ; MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
@@ -123,7 +124,12 @@ PREP_LOAD_IMAGE XOR     R8, R8                  ; no errors
 ;   R9: 0=OK, else error code
 PREP_START      SYSCALL(enter, 1)
                 RSUB    ZXN_MOUNT, 1            ; mount the ZX Next SD image
-                MOVE    R8, @--SP               ; lift return codes over ...
+                CMP     0, R8
+                RBRA    _ZXN_PS_RET, !Z
+                RSUB    ZXN_CFG_INIT, 1         ; settings file (zxn_cfg.asm)
+                XOR     R8, R8
+                XOR     R9, R9
+_ZXN_PS_RET         MOVE    R8, @--SP               ; lift return codes over ...
                 MOVE    R9, @--SP               ; the "leave hump"
                 SYSCALL(leave, 1)
                 MOVE    @SP++, R9
@@ -155,13 +161,14 @@ PREP_START      SYSCALL(enter, 1)
 ; ZX Next: "Reset ZX Next" is an action, not a setting. The core makes a soft
 ; reset on the rising edge of the menu item (see main.vhd). Keep it selected
 ; for a while so that the edge reaches the core, then unselect it again.
+; Then save the settings if they changed (zxn_cfg.asm).
 OPTMG_RESET     .EQU    7                       ; OPTM_G_Reset in config.vhd
 
 OSM_SEL_POST    INCRB
                 CMP     OPTMG_RESET, R8         ; "Reset ZX Next"?
-                RBRA    _OSP_RET, !Z
+                RBRA    _OSP_SAVE, !Z
                 CMP     1, R9                   ; selected (not unselected)?
-                RBRA    _OSP_RET, !Z
+                RBRA    _OSP_SAVE, !Z
 
                 MOVE    0x1000, R1
 _OSP_WAIT       SUB     1, R1
@@ -183,13 +190,15 @@ _OSP_FIND       MOVE    @R0++, R3
                 ADD     1, R1
                 CMP     R1, R2
                 RBRA    _OSP_FIND, !Z
-                RBRA    _OSP_RET, 1             ; not found: leave it selected
+                RBRA    _OSP_SAVE, 1            ; not found: leave it selected
 
 _OSP_FOUND      MOVE    R1, R8
                 XOR     R9, R9
                 RSUB    M2M$FORCE_MENU, 1
 
-_OSP_RET        XOR     R8, R8
+_OSP_SAVE       RSUB    ZXN_CFG_SAVE, 1
+
+                XOR     R8, R8
                 XOR     R9, R9
                 DECRB
                 RET
@@ -228,6 +237,7 @@ CUSTOM_MSG      XOR     R8, R8
 ; ----------------------------------------------------------------------------
 
 #include "zxn_mount.asm"
+#include "zxn_cfg.asm"
 
 ; ----------------------------------------------------------------------------
 ; Core specific constants and strings
@@ -251,6 +261,8 @@ ZXN_SECTORS     .BLOCK  2                       ; size in sectors (low, high)
 ZXN_NCLUS       .BLOCK  2                       ; clusters of the image (low, high)
 ZXN_SPC         .BLOCK  1                       ; sectors per cluster
 ZXN_NEXT        .BLOCK  1                       ; extents written so far
+ZXN_CFG_FH      .BLOCK  FAT32$FDH_STRUCT_SIZE   ; settings file (see zxn_cfg.asm)
+ZXN_CFG_OLD     .BLOCK  16                      ; settings as last saved
 ;
 
 ; M2M Shell variables (only include, if you included "shell.asm" above)

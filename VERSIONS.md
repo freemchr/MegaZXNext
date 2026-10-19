@@ -1,3 +1,13 @@
+Next version (not released yet)
+===============================
+
+* **The options menu settings are remembered** (requested by testers): copy `release/zxnext/zxncfg`
+  to the MEGA65's SD card as `/zxnext/zxncfg`. The settings are loaded at startup and saved after
+  every change. While the file is written, the core lends the SD card back to the M2M Shell: the
+  ZX Next finishes its current sector and waits for a moment. Only with an image file; with a real
+  ZX Next SD card the settings are loaded but not saved. Simulated (GHDL, QNICE emulator), not yet
+  tested on hardware.
+
 R3 / R3A test build (1 MB) - October 2026
 ==========================================
 

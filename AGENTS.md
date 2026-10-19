@@ -78,11 +78,13 @@ Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 │   │       ├── zxnext_top_m65.vhd  derived from rtl/mister/zxnext_top.vhd (MEGA65 top of the ZX Next)
 │   │       ├── bram_xilinx.vhd     replaces rtl/mister/bram.vhd (Altera altsyncram/altdpram → inferred RAM)
 │   │       └── t80n.vhd            patched copy of rtl/cpu/t80n.vhd (vector-length fix Vivado needs)
-│   ├── m2m-rom/            QNICE Shell ROM (m2m-rom.asm: PREP_START mounts the SD card image)
+│   ├── m2m-rom/            QNICE Shell ROM (m2m-rom.asm: PREP_START mounts the SD card image;
+│   │                         zxn_mount.asm image/card, zxn_cfg.asm settings file)
 │   ├── sim/                GHDL testbenches: sdram_zxn (+ MJoergen's SDRAM model, MIT), sd_image
 │   ├── CORE.xdc            core clocks, CPU BUFGMUX clocks, multicycles, SD pins (all boards)
 │   ├── CORE-SDRAM.xdc      SDRAM multicycles, IOB packing, I/O timing (R4/R5/R6 .xpr only)
 │   └── CORE-R{3,4,5,6}.xpr Vivado 2026.1 projects (same sources, different top/XDC/G_BOARD)
+├── release/zxnext/zxncfg   empty settings file (31 × 0xFF) for /zxnext/zxncfg on the SD card
 └── doc/
     ├── m2m/                M2M conventions; exceptions.md = how to re-apply our changes on updates
     ├── m2m-v2.1.0-upgrade.md   plan for moving M2M/ to V2.1.0
@@ -192,11 +194,14 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
 - **QNICE assembly:** `ADD`/`ADDC` (and `SUB`/`SUBC`) pairs must be adjacent: any `ADD` in between,
   even one that only forms a pointer, changes the carry flag (this bug once put the image 32 MB
   too early). Test: `cd CORE/m2m-rom/test && ./run_test.sh` (QNICE emulator, FAT32 test images:
-  carry case, 3 extents, >512 extents, boot.vhd, no image).
+  carry case, 3 extents, >512 extents, boot.vhd, no image, real card; settings file: saved, card
+  not lent, real card, no file). Needs mtools and dosfstools. The emulator's `RUN` takes decimal
+  unless prefixed `0x`.
 - **Ownership:** until "mounted", QNICE has both slots and the ZX Next is held in a hard reset
   (`main.vhd`). From then on the core drives the slot that holds the image (mux in `mega65.vhd`,
   framework outputs passed through the CORE by the patched board tops) and **QNICE must not touch
-  the SD card any more**: no file browser, no vdrives, no settings file (`SAVE_SETTINGS = false`).
+  the SD card any more**: no file browser, no vdrives. The one exception is the settings file
+  (next bullet).
 - **Direct mode (real ZX Next SD card):** if neither image exists but `/TBBLUE.FW` does,
   `ZXN_MOUNT` sets register 8 of `C_DEV_ZXN_IMG` (direct) instead of an extent table. `main.vhd`
   then disables `sd_image` and wires the ZX Next's SPI (`sd_cs0_n`, SCK, MOSI, MISO) straight to
@@ -204,6 +209,17 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
   the card first). QNICE test case 5 covers the detection. Reported working on an R3 with the card in the **back
   slot**; a real ZX Next card in the **bottom tray** was reported not to boot (cause unknown; the
   image engine works from the tray, so suspect the ZX Next's SPI timing on the tray traces).
+- **Settings file** (`zxn_cfg.asm`, `SAVE_SETTINGS = true`, `CFG_FILE = /zxnext/zxncfg`, 31
+  bytes, an empty one is `release/zxnext/zxncfg`): the Shell loads it at startup as usual.
+  `ZXN_CFG_INIT` (PREP_START) then takes the file handle away from the Shell (`CONFIG_FILE` = 0),
+  so M2M's `ROSM_SAVE` never writes while the core owns the card. `ZXN_CFG_SAVE` (OSM_SEL_POST,
+  only if `M2M$CFM_DATA` changed) borrows the card: register 9 of `C_DEV_ZXN_IMG` = 1,
+  `sd_image` finishes its sector, raises `paused_o` and holds the CPU (`cpu_wait_o`), the slot mux
+  in `mega65.vhd` gives the slot to the framework, the Shell rewrites the file's sector
+  (read-modify-write through the FAT32 library), then register 9 = 0. Timeout 3 s (then not
+  saved). Not in direct mode: the core cannot stop the ZX Next between its own SD commands. Both
+  sims cover it (`make sd`: pause during a read and a write; `run_test.sh`). Not yet tested on
+  hardware.
 - **Which slot:** M2M's `sdmux` uses the back slot if a card is in it, otherwise the bottom
   tray; `ZXN_MOUNT` reads `M2M$CSR_SD_ACTIVE` and the core then drives that slot.
 - **Sector engine** (`sd_image.vhd`): virtual sector N is found in the extent table (linear
@@ -355,9 +371,14 @@ check_timing -verbose -file check_timing.rpt
   multicycle (it filters by cell name). Don't add more multicycles without proving the capture
   register really waits that long.
 - `C_MENU_*` ↔ menu line coupling (§3.5). The main menu uses all 13 lines of `OPTM_DY`; on
-  M2M V2.1.0 an oversized menu is a fatal Shell error.
+  M2M V2.1.0 an oversized menu is a fatal Shell error. The settings file is exactly `OPTM_SIZE`
+  bytes: adding or removing a menu line makes every user's `/zxnext/zxncfg` the wrong size (the
+  Shell then silently uses the defaults and saves nothing). Regenerate `release/zxnext/zxncfg`
+  and tell users to replace theirs in the release notes.
 - QNICE must not use the SD card after `PREP_START` (§3.3): the core drives it. Anything in the
-  Shell that needs files after startup (file browser, settings, vdrives) would collide with it.
+  Shell that needs files after startup (file browser, vdrives) would collide with it. The
+  settings file is the exception: it borrows the card through register 9 (§3.3); do the same for
+  anything else.
 - The XDC uses hierarchical names; instance renames drop constraints silently.
 - `doc/temp/*` are upstream M2M scratch notes, not documentation of this core.
 - Vivado 2026.1 has mis-synthesized VHDL procedures that write process variables implicitly (seen
@@ -372,7 +393,7 @@ The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`.
 tested, R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
 If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt handler saving
 an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test F13,
-NMI keys, .DSK; real ZX Next card in the bottom tray; a settings file (tester request); mouse support; R4/R5 testers.
+NMI keys, .DSK; real ZX Next card in the bottom tray; the settings file on hardware; mouse support; R4/R5 testers.
 Requested by the maintainer: a "MEGA65 Next" boot screen with the logo in
 `doc/assets/mega65-logo.png` instead of the firmware's "MiSTer Next" (the firmware picks that text
 by the machine ID 0xDA; not in our code). Keep the version in `config.vhd` (welcome screen,
@@ -390,8 +411,8 @@ framework, Vivado or hardware problems. Where it applies here:
   a help line can be at most 43 characters (MegaST's 640x400 limits do not apply).
 - Resets: `main_reset_m2m_i`/`main_reset_core_i` also carry the QNICE CSR reset (lessons §3.4).
 - Board tops: R3 differs from R4-R6 (no SDRAM, other controllers); its RAM is block RAM (§1, §3.2).
-- Release: no ROMs are shipped (the user supplies the ZX Next distribution on the SD card); no
-  settings file is needed (`SAVE_SETTINGS = false`). Use `bit2core` from mega65-tools, not the 4 MB
+- Release: no ROMs are shipped (the user supplies the ZX Next distribution on the SD card); the
+  settings file ships empty (`release/zxnext/zxncfg`, 31 × 0xFF): put it in the release zip. Use `bit2core` from mega65-tools, not the 4 MB
   capped copy in M2M. Never call a board "working" before a tester with that board confirmed it.
 - Hardware debugging: TE0790 JTAG under WSL (`usbipd attach --wsl`), BSCANE2 probes instead of ILA
   (free licence), load test bitstreams over JTAG.

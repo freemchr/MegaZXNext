@@ -30,6 +30,12 @@
 -- can take milliseconds to start a read, so the window is real; holding the CPU until the old
 -- transfer is done closes it. (tb_sd_image.vhd reproduces the corruption without this.)
 --
+-- pause_i lends the physical card back to the QNICE Shell, which saves the options menu settings
+-- in a file next to the image. The engine finishes the sector it is working on and starts no new
+-- one; paused_o says that the card is free (mega65.vhd then gives the slot to the framework). The
+-- CPU waits for the whole pause, so the ZX Next's own SD timeouts do not run. Requests of the
+-- virtual card wait and are served when pause_i drops.
+--
 -- MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
 ----------------------------------------------------------------------------------
 
@@ -67,6 +73,10 @@ entity sd_image is
       sd_sclk_o      : out std_logic;
       sd_mosi_o      : out std_logic;
       sd_miso_i      : in  std_logic;
+
+      -- Lend the card to QNICE (settings file)
+      pause_i        : in  std_logic;           -- request
+      paused_o       : out std_logic;           -- the card is idle and not used by this module
 
       cpu_wait_o     : out std_logic;
       active_o       : out std_logic;           -- a sector is being transferred
@@ -126,6 +136,7 @@ architecture synthesis of sd_image is
    signal wait_cnt      : natural range 0 to 7 := 0;
    signal wait_lookup   : std_logic := '0';
    signal err_cnt       : unsigned(15 downto 0) := (others => '0');
+   signal paused        : std_logic := '0';
 
    -- Extent lookup
    signal req_lba       : unsigned(31 downto 0) := (others => '0');
@@ -180,7 +191,7 @@ begin
       end if;
    end process wait_proc;
 
-   cpu_wait_o <= sd_wait or (sd_ack and vsd_idle);
+   cpu_wait_o <= sd_wait or (sd_ack and vsd_idle) or (pause_i and enable_i);
 
    ----------------------------------------------------------------------------------------------
    -- Physical SD card
@@ -244,7 +255,7 @@ begin
                sd_ack       <= '0';
                sd_buff_addr <= (others => '0');
                tries        <= 0;
-               if enable_i = '1' and (sd_rd = '1' or sd_wr = '1') then
+               if enable_i = '1' and pause_i = '0' and (sd_rd = '1' or sd_wr = '1') then
                   sd_ack   <= '1';
                   is_write <= sd_wr;
                   wait_cnt <= 7;                -- minimum sd_ack pulse (see s_ack_off)
@@ -417,6 +428,12 @@ begin
                end if;
          end case;
 
+         -- The card is free when no sector is in progress and the controller is idle
+         paused <= '0';
+         if enable_i = '1' and pause_i = '1' and state = s_idle and ctl_busy = '0' then
+            paused <= '1';
+         end if;
+
          if enable_i = '0' then
             state          <= s_idle;
             sd_ack         <= '0';
@@ -430,6 +447,7 @@ begin
 
    ext_addr_o <= std_logic_vector(ext_addr);
 
+   paused_o  <= paused;
    active_o  <= sd_ack;
    err_cnt_o <= std_logic_vector(err_cnt);
 

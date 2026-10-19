@@ -312,6 +312,8 @@ signal main_img_ext_count     : std_logic_vector(9 downto 0);
 signal main_img_ext_addr      : std_logic_vector(8 downto 0);
 signal main_img_ext_data      : std_logic_vector(63 downto 0);
 signal main_img_err_cnt       : std_logic_vector(15 downto 0);
+signal main_img_pause         : std_logic;               -- QNICE wants the card (settings file)
+signal main_img_paused        : std_logic;               -- sd_image has let go of it
 signal main_own_back          : std_logic;
 signal main_own_tray          : std_logic;
 
@@ -334,6 +336,9 @@ signal main_sd_miso           : std_logic;
 --    0x0007            number of extents (1 .. 512)
 --    0x0008            1 = direct: no image, the card in the slot is a real ZX Next SD card and
 --                      the ZX Next's SPI goes straight to it (size and extents are not used)
+--    0x0009            write bit 0: 1 = lend the card to QNICE (to save the settings file), 0 =
+--                      give it back. Read: bit 0 = request, bit 1 = granted: the ZX Next waits,
+--                      the framework drives the slot. Only with an image (not direct).
 --    0x0010 / 0x0011   extent: first virtual sector, low / high word
 --    0x0012 / 0x0013   extent: first physical sector, low / high word
 --    0x0014            write: store the extent (0x0010 .. 0x0013) as table entry n (0 .. 511)
@@ -351,6 +356,8 @@ signal qnice_img_slot         : std_logic := '0';
 signal qnice_img_enable       : std_logic := '0';
 signal qnice_img_direct       : std_logic := '0';
 signal qnice_img_err_cnt      : std_logic_vector(15 downto 0);
+signal qnice_img_pause        : std_logic := '0';
+signal qnice_img_paused       : std_logic;
 
 begin
 
@@ -524,6 +531,8 @@ begin
          img_ext_addr_o       => main_img_ext_addr,
          img_ext_data_i       => main_img_ext_data,
          img_err_cnt_o        => main_img_err_cnt,
+         img_pause_i          => main_img_pause,
+         img_paused_o         => main_img_paused,
 
          sd_cs_n_o            => main_sd_cs_n,
          sd_sclk_o            => main_sd_sclk,
@@ -579,8 +588,32 @@ begin
       end if;
    end process main_img_ext_read_proc;
 
-   main_own_back <= main_img_enable and main_img_slot;
-   main_own_tray <= main_img_enable and not main_img_slot;
+   -- QNICE may borrow the card to save the settings file (register 9): sd_image stops between two
+   -- sectors and the framework gets the slot back until QNICE returns it.
+   i_cdc_img_pause : entity work.cdc_stable
+      generic map (
+         G_DATA_SIZE => 1
+      )
+      port map (
+         src_clk_i      => qnice_clk_i,
+         src_data_i(0)  => qnice_img_pause,
+         dst_clk_i      => main_clk,
+         dst_data_o(0)  => main_img_pause
+      ); -- i_cdc_img_pause
+
+   i_cdc_img_paused : entity work.cdc_stable
+      generic map (
+         G_DATA_SIZE => 1
+      )
+      port map (
+         src_clk_i      => main_clk,
+         src_data_i(0)  => main_img_paused,
+         dst_clk_i      => qnice_clk_i,
+         dst_data_o(0)  => qnice_img_paused
+      ); -- i_cdc_img_paused
+
+   main_own_back <= main_img_enable and main_img_slot and not main_img_paused;
+   main_own_tray <= main_img_enable and not main_img_slot and not main_img_paused;
 
    sd_reset_o    <= main_sd_cs_n when main_own_back = '1' else fw_sd_reset_i;
    sd_clk_o      <= main_sd_sclk when main_own_back = '1' else fw_sd_clk_i;
@@ -649,6 +682,7 @@ begin
                when 5      => qnice_img_enable                     <= qnice_dev_data_i(0);
                when 7      => qnice_img_ext_count                  <= qnice_dev_data_i(9 downto 0);
                when 8      => qnice_img_direct                     <= qnice_dev_data_i(0);
+               when 9      => qnice_img_pause                      <= qnice_dev_data_i(0);
                when 16#10# => qnice_img_ext_stage(15 downto 0)     <= qnice_dev_data_i;
                when 16#11# => qnice_img_ext_stage(31 downto 16)    <= qnice_dev_data_i;
                when 16#12# => qnice_img_ext_stage(47 downto 32)    <= qnice_dev_data_i;
@@ -659,6 +693,7 @@ begin
          end if;
          if qnice_rst_i = '1' then
             qnice_img_enable <= '0';
+            qnice_img_pause  <= '0';
          end if;
       end if;
    end process qnice_img_regs_proc;
@@ -686,6 +721,7 @@ begin
             when 6      => qnice_dev_data_o <= qnice_img_err_cnt;
             when 7      => qnice_dev_data_o <= "000000" & qnice_img_ext_count;
             when 8      => qnice_dev_data_o <= x"000" & "000" & qnice_img_direct;
+            when 9      => qnice_dev_data_o <= x"000" & "00" & qnice_img_paused & qnice_img_pause;
             when others => null;
          end case;
       end if;

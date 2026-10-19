@@ -174,7 +174,8 @@ Passes
   - groups numbered monotonically, a single `OPTM_G_START`, submenus balanced;
   - `OPTM_DX/DY` correct (the main menu uses all 13 lines).
 - **Welcome and help screens:** WHS structure correct.
-- **Settings:** `SAVE_SETTINGS = false` is justified because QNICE has no SD card.
+- **Settings:** `SAVE_SETTINGS = true`; M2M only loads the file, saving is done by the core's own
+  `zxn_cfg.asm` while the core lends the SD card to QNICE (AGENTS.md §3.3).
 - **Unused features correctly "off":** no vdrives or CRT/ROMs (values correct); no QNICE
   devices (`x"EEEE"`); HyperRAM unused.
 - **Tie-offs:** cartridge, IEC and joystick outputs idle; `cart_en_o = '1'`.

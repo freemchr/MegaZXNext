@@ -13,7 +13,9 @@
 -- Checks: card init as the ZX Next does it, single and multiple block reads (CMD17/18, across the
 -- emulator's 4-buffer wrap), single and multiple block writes (CMD24/25) read back through both
 -- sides, the base offset, reads and writes beyond the image, retries after CRC errors, the error
--- counter, the CPU wait during writes, and a slow CPU clock.
+-- counter, the CPU wait during writes, a slow CPU clock, and lending the card to QNICE (pause_i)
+-- in the middle of a read and of a write: the card must be idle while paused, the CPU must wait,
+-- and the transfers must complete correctly afterwards.
 --
 -- Run: see Makefile in this directory
 --
@@ -162,6 +164,15 @@ architecture sim of tb_sd_image is
    signal ext_data      : std_logic_vector(63 downto 0) := (others => '0');
    signal done          : boolean := false;
 
+   -- Lending the card to QNICE
+   signal pause         : std_logic := '0';
+   signal paused        : std_logic;
+   signal pause_go      : boolean   := false;   -- toggle: start a pause after pause_delay
+   signal pause_delay   : time      := 0 us;
+   signal pause_count   : natural   := 0;       -- pauses granted
+   signal pause_errors  : natural   := 0;       -- pause_proc
+   signal pause_misuse  : natural   := 0;       -- pause_mon
+
 begin
 
    clk <= not clk after C_CLK_PERIOD / 2 when not done;
@@ -217,6 +228,8 @@ begin
          sd_sclk_o      => sd_sclk,
          sd_mosi_o      => sd_mosi,
          sd_miso_i      => sd_miso,
+         pause_i        => pause,
+         paused_o       => paused,
          cpu_wait_o     => cpu_wait,
          active_o       => active,
          err_cnt_o      => err_cnt
@@ -244,6 +257,38 @@ begin
          end if;
       end if;
    end process wait_mon;
+
+   -- QNICE borrows the card: request, wait for the grant, keep it for 300 us, give it back
+   pause_proc : process
+   begin
+      wait on pause_go;
+      wait for pause_delay;
+      wait until rising_edge(clk);
+      pause <= '1';
+      wait until paused = '1' for 20 ms;
+      if paused /= '1' then
+         report "pause not granted" severity error;
+         pause_errors <= pause_errors + 1;
+      else
+         pause_count <= pause_count + 1;
+      end if;
+      wait for 300 us;
+      if cpu_wait /= '1' then
+         report "CPU does not wait while paused" severity error;
+         pause_errors <= pause_errors + 1;
+      end if;
+      wait until rising_edge(clk);
+      pause <= '0';
+   end process pause_proc;
+
+   -- While paused, sd_image must leave the card alone (it belongs to QNICE then)
+   pause_mon : process (sd_sclk, sd_cs_n, paused)
+   begin
+      if paused = '1' and (sd_sclk'event or sd_cs_n = '0') then
+         report "card used while paused" severity error;
+         pause_misuse <= pause_misuse + 1;
+      end if;
+   end process pause_mon;
 
    ----------------------------------------------------------------------------------------------
    -- Physical SDHC card (SPI mode 0)
@@ -654,6 +699,41 @@ begin
       read_sector(50, buf);
       check_written(buf, 3, "slow read back");
       report "slow CPU done";
+      cpu_slow <= false;
+
+      -- Lend the card to QNICE while the ZX Next reads (the card is slow: the pause request
+      -- arrives in the middle of a sector) and while it writes
+      card.set_latency(2000);
+      pause_delay <= 200 us;
+      pause_go    <= not pause_go;
+      select_card('0');
+      command(18, 40, x"FF", rx);
+      check(rx = x"00", "CMD18 R1 (pause)");
+      for n in 0 to 3 loop
+         read_block(buf);
+         check_sector(buf, phys(40 + n), "read with pause " & integer'image(n));
+      end loop;
+      command(12, 0, x"FF", rx);
+      wait_not_busy;
+      select_card('1');
+      send(x"FF");
+      card.set_latency(5);
+      wait for 1 ms;
+      check(pause_count = 1, "pause during a read not granted");
+
+      pause_delay <= 20 us;
+      pause_go    <= not pause_go;
+      waits := wait_cycles;
+      write_sector(55, 9);
+      wait for 1 ms;
+      check(pause_count = 2, "pause during a write not granted");
+      check(wait_cycles - waits > 300 * 28, "CPU did not wait during the pause");
+      read_sector(55, buf);
+      check_written(buf, 9, "write with pause");
+      check_sector(buf, phys(55), "card after write with pause");
+      check(pause_errors = 0 and pause_misuse = 0, "pause errors: " &
+            integer'image(pause_errors) & ", card used while paused: " & integer'image(pause_misuse));
+      report "pause done";
 
       if errors = 0 then
          report "tb_sd_image: all tests passed" severity note;

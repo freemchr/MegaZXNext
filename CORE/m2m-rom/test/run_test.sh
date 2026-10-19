@@ -10,6 +10,11 @@
 #   3. contiguous /zxnext/boot.vhd only
 #   4. no image
 #   5. no image, but /TBBLUE.FW in the root: a real ZX Next SD card, used directly
+# and the settings file (../zxn_cfg.asm, test_zxn_cfg.asm):
+#   6. saved while the core lends the card; the image and the rest of the card stay unchanged
+#   7. the core does not lend the card: not saved, the card is given back
+#   8. real ZX Next SD card: not saved
+#   9. no settings file: nothing happens
 # The expected first sector and size are computed independently from the image (python).
 #
 # Needs: gcc, mtools, mkfs.fat (dosfstools), sfdisk, python3. Run from this directory.
@@ -31,6 +36,7 @@ cp "$QNICE/tools/detect.include" "$WORK/qnice/tools/"
 EMU=$WORK/qnice/emulator/qnice
 
 "$QNICE/assembler/asm" test_zxn_mount.asm > /dev/null
+"$QNICE/assembler/asm" test_zxn_cfg.asm > /dev/null
 
 # FAT32 image: MBR, partition at sector 2048, 4 KB clusters
 make_image() {
@@ -87,7 +93,7 @@ EOF
 }
 
 run() {
-    printf 'LOAD %s\nATTACH %s\nLOAD test_zxn_mount.out\nRUN 8000\nQUIT\n' \
+    printf 'LOAD %s\nATTACH %s\nLOAD test_zxn_mount.out\nRUN 0x8000\nQUIT\n' \
         "$QNICE/monitor/monitor.out" "$1" | "$EMU" 2>&1 | tr -d '\r'
 }
 
@@ -185,5 +191,71 @@ if grep -q "RESULT: 0000" <<< "$out" &&
 else
     echo "FAIL  real ZX Next SD card (direct)"; echo "$out" | grep -E "ZX Next|RESULT|REGS|CODE"; fail=1
 fi
+
+# Settings file: run test_zxn_cfg at $2 (0x8000: the core lends the card, 0x8002: it does not)
+run_cfg() {
+    printf 'LOAD %s\nATTACH %s\nLOAD test_zxn_cfg.out\nRUN %s\nQUIT\n' \
+        "$QNICE/monitor/monitor.out" "$1" "$2" | "$EMU" 2>&1 | tr -d '\r'
+}
+cfg_file() { mcopy -n -i "$1@@1048576" ::/zxnext/zxncfg "$2"; }
+# Expected file after saving 0xA5C3: byte n = bit (n mod 16)
+python3 -I -c "import sys; sys.stdout.buffer.write(bytes((0xA5C3 >> (n % 16)) & 1 for n in range(31)))" > "$WORK/cfg_saved"
+python3 -I -c "import sys; sys.stdout.buffer.write(b'\xff' * 31)" > "$WORK/cfg_new"
+cfg_check() {
+    local title=$1 ok=$2 out=$3
+    if [ "$ok" = 1 ]; then echo "PASS  $title"; else
+        echo "FAIL  $title"; echo "$out" | grep -E "ZX Next|CFG|RESULT"; fail=1; fi
+}
+
+# 6. image and a new settings file: saved once, then nothing to save; the card is given back
+make_image "$WORK/t7.img"
+pattern 4M "$WORK/boot.img"
+mcopy -i "$WORK/t7.img@@1048576" "$WORK/boot.img" ::/zxnext/boot.img
+mcopy -i "$WORK/t7.img@@1048576" "$WORK/cfg_new" ::/zxnext/zxncfg
+cp "$WORK/t7.img" "$WORK/t7.before"
+out=$(run_cfg "$WORK/t7.img" 0x8000)
+cfg_file "$WORK/t7.img" "$WORK/cfg_out"
+mcopy -n -i "$WORK/t7.img@@1048576" ::/zxnext/boot.img "$WORK/boot_out"
+changed=$(cmp -l "$WORK/t7.before" "$WORK/t7.img" | wc -l)
+ok=0
+grep -q "ZX Next: settings are saved when they change" <<< "$out" &&
+    [ "$(grep -c 'ZX Next: settings saved' <<< "$out")" = 1 ] &&
+    grep -q "^CFG: 0000 0000" <<< "$out" &&
+    cmp -s "$WORK/cfg_out" "$WORK/cfg_saved" && cmp -s "$WORK/boot_out" "$WORK/boot.img" &&
+    [ "$changed" -le 31 ] && ok=1
+cfg_check "settings saved ($changed bytes of the card changed)" $ok "$out"
+
+# 7. the core does not lend the card: give up, give it back, file unchanged
+make_image "$WORK/t8.img"
+mcopy -i "$WORK/t8.img@@1048576" "$WORK/boot.img" ::/zxnext/boot.img
+mcopy -i "$WORK/t8.img@@1048576" "$WORK/cfg_new" ::/zxnext/zxncfg
+out=$(run_cfg "$WORK/t8.img" 0x8002)
+cfg_file "$WORK/t8.img" "$WORK/cfg_out"
+ok=0
+grep -q "ZX Next: SD card busy, settings not saved" <<< "$out" &&
+    ! grep -q "ZX Next: settings saved" <<< "$out" &&
+    grep -q "^CFG: 0000 0000" <<< "$out" && cmp -s "$WORK/cfg_out" "$WORK/cfg_new" && ok=1
+cfg_check "card not lent: not saved" $ok "$out"
+
+# 8. real ZX Next SD card with a settings file: loaded by the Shell, never saved
+make_image "$WORK/t9.img"
+mcopy -i "$WORK/t9.img@@1048576" "$WORK/TBBLUE.FW" ::/TBBLUE.FW
+mcopy -i "$WORK/t9.img@@1048576" "$WORK/cfg_new" ::/zxnext/zxncfg
+out=$(run_cfg "$WORK/t9.img" 0x8000)
+cfg_file "$WORK/t9.img" "$WORK/cfg_out"
+ok=0
+grep -q "ZX Next: real ZX Next SD card, settings are not saved" <<< "$out" &&
+    ! grep -q "ZX Next: settings saved" <<< "$out" &&
+    grep -q "^CFG: 0000 0000" <<< "$out" && cmp -s "$WORK/cfg_out" "$WORK/cfg_new" && ok=1
+cfg_check "real ZX Next SD card: not saved" $ok "$out"
+
+# 9. no settings file
+make_image "$WORK/t10.img"
+mcopy -i "$WORK/t10.img@@1048576" "$WORK/boot.img" ::/zxnext/boot.img
+out=$(run_cfg "$WORK/t10.img" 0x8000)
+ok=0
+grep -q "RESULT\|ZX Next: image at" <<< "$out" && ! grep -q "ZX Next: settings" <<< "$out" &&
+    grep -q "^CFG: 0000 0000" <<< "$out" && ok=1
+cfg_check "no settings file" $ok "$out"
 
 exit $fail

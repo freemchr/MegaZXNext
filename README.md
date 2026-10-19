@@ -183,7 +183,16 @@ Options menu
 
 Press **Help** for the options menu: HDMI mode (720p, 576p, 640x480, 720x480, 800x600), VGA
 mode (standard or 15 kHz retro), flip joystick ports, HDMI CRT emulation, audio improvements,
-Reset ZX Next and the help pages. The settings are not saved: the ZX Next owns the SD card while it runs.
+Reset ZX Next and the help pages.
+
+**Remembering the settings:** copy the file
+[`release/zxnext/zxncfg`](release/zxnext/zxncfg) (31 bytes) to the MEGA65's SD card as
+**`/zxnext/zxncfg`**, next to your `boot.vhd`/`boot.img`. The core then loads the settings at
+startup and saves them whenever you change one: the ZX Next pauses for a moment while the file is
+written. The core cannot create the file itself: without it (or if its size is not exactly 31
+bytes) the defaults are used and nothing is saved. With a real ZX Next SD card the settings are
+loaded from `/zxnext/zxncfg` on that card if it is there, but not saved: the core cannot pause the
+ZX Next in the middle of its own SD card commands.
 
 Known issues
 ------------
@@ -191,8 +200,8 @@ Known issues
 * Tested on R6 and (the 1 MB test build) on R3. R4/R5 are untested. The R3/R3A build has 1 MB
   of RAM: software that needs 2 MB does not run.
 * A real ZX Next SD card works in the back slot; in the bottom tray it was reported not to boot.
-* The options menu settings are not remembered (no settings file: the ZX Next owns the SD card
-  while it runs). Requested by testers.
+* The options menu settings are only remembered with an image and a `/zxnext/zxncfg` file (see
+  "Options menu"), not with a real ZX Next SD card. Not yet tested on hardware.
 * Not tested yet: F13, the NMI keys (F9/F11).
 * Real ZX Next SD cards must be FAT32; FAT16 cards are not supported.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.

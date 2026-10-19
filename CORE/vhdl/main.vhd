@@ -96,6 +96,8 @@ entity main is
       img_ext_addr_o          : out std_logic_vector(8 downto 0);    -- extent table (in mega65.vhd)
       img_ext_data_i          : in  std_logic_vector(63 downto 0);
       img_err_cnt_o           : out std_logic_vector(15 downto 0);
+      img_pause_i             : in  std_logic;              -- lend the card to QNICE (settings file)
+      img_paused_o            : out std_logic;              -- the card is free for QNICE
 
       -- Physical SD card (mega65.vhd connects the slot that holds the image)
       sd_cs_n_o               : out std_logic;
@@ -524,6 +526,8 @@ begin
          sd_sclk_o      => img_sclk,
          sd_mosi_o      => img_mosi,
          sd_miso_i      => sd_miso_i,
+         pause_i        => img_pause_i,
+         paused_o       => img_paused_o,
          cpu_wait_o     => img_cpu_wait,
          active_o       => img_active,
          err_cnt_o      => img_err_cnt_o

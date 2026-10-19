@@ -217,9 +217,10 @@ constant ASCAL_MODE        : natural := 0;   -- see ascal.vhd for the meaning of
 -- the length of OPTM_SIZE bytes. If the first byte of the file has the value 0xFF then it
 -- is considered as "default", i.e. the menu items specified by OPTM_G_STDSEL are selected.
 -- If the file does not exists, then settings are not saved and OPTM_G_STDSEL always denotes the standard settings.
--- Once the ZX Next's SD card image is mounted, the core drives the SD card (sd_image.vhd) and the M2M
--- framework must not access it any more, which is why saving the settings is not supported.
-constant SAVE_SETTINGS     : boolean := false;
+-- The Shell loads the file at startup. Once the ZX Next's SD card image is mounted the core drives the
+-- SD card (sd_image.vhd), so the Shell does not save it itself: m2m-rom/zxn_cfg.asm does, after each
+-- change, while the core lends it the card. Not with a real ZX Next SD card (direct mode).
+constant SAVE_SETTINGS     : boolean := true;
 
 -- Delay in ms between the last write request to a virtual drive from the core and the start of the
 -- cache flushing (i.e. writing to the SD card). Since every new write from the core invalidates the cache,
