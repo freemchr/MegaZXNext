@@ -1,12 +1,20 @@
-Next version (not released yet)
-===============================
+Version 1.1 - October 2026
+==========================
+
+V1.0 plus remembered settings, and the R3/R3A build (1 MB) is now part of the release: a tester
+reported the R3 test build working like the R6 version.
 
 * **The options menu settings are remembered** (requested by testers): copy `release/zxnext/zxncfg`
   to the MEGA65's SD card as `/zxnext/zxncfg`. The settings are loaded at startup and saved after
   every change. While the file is written, the core lends the SD card back to the M2M Shell: the
   ZX Next finishes its current sector and waits for a moment. Only with an image file; with a real
-  ZX Next SD card the settings are loaded but not saved. Simulated (GHDL, QNICE emulator), not yet
-  tested on hardware.
+  ZX Next SD card the settings are loaded but not saved. Tested on the R6.
+* **R3 / R3A** (`megazxnext_r3.cor`): 1 MB of RAM (see the R3 test build below). Tested on an R3
+  (without the settings file); not yet on an R3A.
+* R4 and R5: still untested.
+
+Known issues: as V1.0, plus: a real ZX Next SD card in the bottom tray was reported not to boot
+(use the back slot); settings are not saved with a real ZX Next SD card.
 
 R3 / R3A test build (1 MB) - October 2026
 ==========================================

@@ -78,7 +78,7 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 -- window contains the amount of pages, so each zero-terminated string can be up to 4095 bytes = 4094 characters long.
 
 constant SCR_WELCOME : string :=
-   "MegaZXNext V1.0\n" &
+   "MegaZXNext V1.1\n" &
    "a ZX Next core for the MEGA65\n" &
    "Ported by Chris Freeman\n" &
    "based on ZXNext_MISTer\n\n" &
@@ -105,7 +105,7 @@ constant SCR_WELCOME : string :=
    "\n    Press Space to continue.\n";
 
 constant HELP_1 : string :=
-   "\n MegaZXNext V1.0\n" &
+   "\n MegaZXNext V1.1\n" &
    " a ZX Next core for the MEGA65\n\n" &
    " Port of ZXNext_MISTer (Alvin Albrecht,\n" &
    " Victor Trucco, Fabio Belavenuto, Sorgelig)\n" &
@@ -252,7 +252,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "MEGAZXNEXT V1.0";
+constant CORENAME          : string := "MEGAZXNEXT V1.1";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH

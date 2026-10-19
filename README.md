@@ -15,29 +15,29 @@ The ZX Next is an enhanced ZX Spectrum: a Z80N CPU at 3.5, 7, 14 or 28 MHz,
 Layer 2 bitmap graphics, tilemap, sprites, copper, DMA, three AY sound chips, DivMMC and
 Multiface, and 2 MB of RAM. It runs NextZXOS and the classic Spectrum 48K, 128K and +3 software.
 
-Status: V1.0, tested on the MEGA65 R6
--------------------------------------
+Status: V1.1, tested on the MEGA65 R6 and R3
+---------------------------------------------
 
-**V1.0** runs on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and the Browser work,
+**V1.1** runs on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and the Browser work,
 music plays, Next games (Warhawk Next, Nextoid) run with keyboard control, tape (.TAP) games
 load, and a joystick reads correctly as Kempston. The grey screen that V0.2 alpha sometimes
-showed after a reset is fixed (it was an SDRAM read timing problem). Please report bugs (see
-below).
+showed after a reset is fixed (it was an SDRAM read timing problem). New in V1.1: the options
+menu settings are remembered (see "Options menu"). Please report bugs (see below).
 
 * **R4 and R5:** the core builds for them, but nobody has tested it on these boards yet. If you
   have one, a test report is very welcome.
-* **R3 / R3A: test build, 1 MB.** The R3 and R3A have no SDRAM, so on them the ZX Next gets
+* **R3 / R3A: 1 MB.** The R3 and R3A have no SDRAM, so on them the ZX Next gets
   **1 MB of RAM inside the FPGA**, like an unexpanded ZX Next (NextZXOS shows 768K of RAM).
   A tester ran it on an R3 and reports that it works like the R6 version: HDMI modes, VGA,
   scanlines, booting from an image or from a real ZX Next SD card, Reset ZX Next, joysticks and
   many games. Software that needs 2 MB does not run (for example RogueCraft DX: you end up
-  back in the NextZXOS menu). It is a separate test release:
-  [MegaZXNext R3 test (1 MB)](https://github.com/freemchr/MegaZXNext/releases/tag/v1.0-r3-test).
+  back in the NextZXOS menu). Since V1.1 the R3 build is part of the normal release
+  (`megazxnext_r3.cor`). Not yet tested on an R3A.
 
 Requirements
 ------------
 
-* A MEGA65 R6 (R4/R5 untested; R3/R3A: separate 1 MB test build, see above).
+* A MEGA65 R6 or R3 (R4/R5 untested; R3A untested; R3/R3A: 1 MB, see above).
 * Either an **image of a ZX Next SD card** on the MEGA65's SD card (FAT32), or a **real ZX Next
   SD card** (FAT32) in one of the MEGA65's SD card slots. No ROMs or system files are included
   in this core: the ZX Next loads its firmware, ROMs and NextZXOS from that card, just like the
@@ -135,10 +135,12 @@ Installation
    Or use a **real ZX Next SD card** (FAT32, `/TBBLUE.FW` in its root) instead: put it into the
    **back slot** (see "Which SD card is used" above). A real ZX Next card in the bottom tray was
    reported not to boot.
-2. **The core.** Download the zip from the release (`megazxnext_v1.0_r4_r5_r6.zip`), unzip it
-   and take the `.cor` file for your board (`megazxnext_r6.cor` for an R6; `_r5`/`_r4` are
-   untested). For an R3/R3A, take `megazxnext_r3_test.zip` from the
-   [R3 test release](https://github.com/freemchr/MegaZXNext/releases/tag/v1.0-r3-test) instead. Flash it into a core slot with the MEGA65's flash menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
+2. **The core.** Download the zip from the
+   [latest release](https://github.com/freemchr/MegaZXNext/releases/latest)
+   (`megazxnext_v1.1.zip`), unzip it and take the `.cor` file for your board
+   (`megazxnext_r6.cor` for an R6, `megazxnext_r3.cor` for an R3/R3A; `_r5`/`_r4` are
+   untested). Also copy `zxnext/zxncfg` from the zip to the MEGA65's SD card as
+   `/zxnext/zxncfg` if you want the options menu settings remembered. Flash it into a core slot with the MEGA65's flash menu (switch the MEGA65 on while holding **No Scroll**), as described in the MEGA65 user guide.
 3. Start the core. The welcome screen shows the most important keys; press Space and the
    ZX Next boots.
 
@@ -185,8 +187,8 @@ Press **Help** for the options menu: HDMI mode (720p, 576p, 640x480, 720x480, 80
 mode (standard or 15 kHz retro), flip joystick ports, HDMI CRT emulation, audio improvements,
 Reset ZX Next and the help pages.
 
-**Remembering the settings:** copy the file
-[`release/zxnext/zxncfg`](release/zxnext/zxncfg) (31 bytes) to the MEGA65's SD card as
+**Remembering the settings:** copy the file `zxnext/zxncfg` from the release zip (also in this
+repository: [`release/zxnext/zxncfg`](release/zxnext/zxncfg), 31 bytes) to the MEGA65's SD card as
 **`/zxnext/zxncfg`**, next to your `boot.vhd`/`boot.img`. The core then loads the settings at
 startup and saves them whenever you change one: the ZX Next pauses for a moment while the file is
 written. The core cannot create the file itself: without it (or if its size is not exactly 31
@@ -197,11 +199,11 @@ ZX Next in the middle of its own SD card commands.
 Known issues
 ------------
 
-* Tested on R6 and (the 1 MB test build) on R3. R4/R5 are untested. The R3/R3A build has 1 MB
+* Tested on R6 and R3. R4/R5 and the R3A are untested. The R3/R3A build has 1 MB
   of RAM: software that needs 2 MB does not run.
 * A real ZX Next SD card works in the back slot; in the bottom tray it was reported not to boot.
 * The options menu settings are only remembered with an image and a `/zxnext/zxncfg` file (see
-  "Options menu"), not with a real ZX Next SD card. Not yet tested on hardware.
+  "Options menu"), not with a real ZX Next SD card. Tested on the R6.
 * Not tested yet: F13, the NMI keys (F9/F11).
 * Real ZX Next SD cards must be FAT32; FAT16 cards are not supported.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.

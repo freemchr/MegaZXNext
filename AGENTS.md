@@ -28,8 +28,8 @@ on the task, not on rediscovering the layout.
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
   four top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
-- **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.0 is released**
-  (R6; R4/R5 builds included, untested). On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
+- **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.1 is released**
+  (R6 and R3 tested; R4/R5 builds included, untested; settings file tested on R6). On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
   work. The V0.2 grey screen after resets was reported gone with the V0.3 build (SDRAM read hold
   timing fix, §3.2). Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
   on R6; R4/R5 are untested and need outside testers before they are called working.
@@ -218,8 +218,7 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
   in `mega65.vhd` gives the slot to the framework, the Shell rewrites the file's sector
   (read-modify-write through the FAT32 library), then register 9 = 0. Timeout 3 s (then not
   saved). Not in direct mode: the core cannot stop the ZX Next between its own SD commands. Both
-  sims cover it (`make sd`: pause during a read and a write; `run_test.sh`). Not yet tested on
-  hardware.
+  sims cover it (`make sd`: pause during a read and a write; `run_test.sh`). Works on the R6.
 - **Which slot:** M2M's `sdmux` uses the back slot if a card is in it, otherwise the bottom
   tray; `ZXN_MOUNT` reads `M2M$CSR_SD_ACTIVE` and the core then drives that slot.
 - **Sector engine** (`sd_image.vhd`): virtual sector N is found in the extent table (linear
@@ -389,11 +388,11 @@ check_timing -verbose -file check_timing.rpt
 
 ## 8. Open items
 
-The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.0 (R6
+The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.1 (R6 and R3
 tested, R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
 If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt handler saving
 an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test F13,
-NMI keys, .DSK; real ZX Next card in the bottom tray; the settings file on hardware; mouse support; R4/R5 testers.
+NMI keys, .DSK; real ZX Next card in the bottom tray; mouse support; R4/R5 testers.
 Requested by the maintainer: a "MEGA65 Next" boot screen with the logo in
 `doc/assets/mega65-logo.png` instead of the firmware's "MiSTer Next" (the firmware picks that text
 by the machine ID 0xDA; not in our code). Keep the version in `config.vhd` (welcome screen,
