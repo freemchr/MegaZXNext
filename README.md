@@ -28,10 +28,11 @@ below).
   have one, a test report is very welcome.
 * **R3 / R3A: test build, 1 MB.** The R3 and R3A have no SDRAM, so on them the ZX Next gets
   **1 MB of RAM inside the FPGA**, like an unexpanded ZX Next (NextZXOS shows 768K of RAM).
-  Software that needs 2 MB does not run. This memory design was tested on an R6 (NextZXOS,
-  `.MEM`, Warhawk Next), but the R3 build itself has **not run on an R3 yet**. It is a separate
-  test release: [MegaZXNext R3 test (1 MB)](https://github.com/freemchr/MegaZXNext/releases/tag/v1.0-r3-test).
-  R3 owners: please tell us how it went.
+  A tester ran it on an R3 and reports that it works like the R6 version: HDMI modes, VGA,
+  scanlines, booting from an image or from a real ZX Next SD card, Reset ZX Next, joysticks and
+  many games. Software that needs 2 MB does not run (for example RogueCraft DX: you end up
+  back in the NextZXOS menu). It is a separate test release:
+  [MegaZXNext R3 test (1 MB)](https://github.com/freemchr/MegaZXNext/releases/tag/v1.0-r3-test).
 
 Requirements
 ------------
@@ -49,8 +50,9 @@ There are two ways to give the ZX Next its SD card:
 
 1. **An image file** (recommended): a byte-for-byte copy of a complete ZX Next SD card, stored on
    the MEGA65's normal SD card next to everything else. The ZX Next only ever touches that file.
-2. **A real ZX Next SD card** (new in V1.0, not yet tested on hardware): a FAT32 card prepared
-   for the ZX Next, for example the card from a real ZX Spectrum Next, put into the MEGA65. The
+2. **A real ZX Next SD card** (new in V1.0): a FAT32 card prepared for the ZX Next, for
+   example the card from a real ZX Spectrum Next or one you made with the ZX Next's own tools,
+   put into the MEGA65's **back slot** (external micro SD). The
    core uses it when the card has no image on it but has `/TBBLUE.FW` in its root. The ZX Next
    then reads and writes the card directly, as on a real Next. FAT16 cards are not supported
    (the MEGA65 needs to read the card at startup): copy the files of a FAT16 card onto a FAT32
@@ -72,7 +74,11 @@ used at all.
 | empty | MEGA65 card with `/zxnext/boot.img` | the image on the bottom tray card |
 | MEGA65 card with `/zxnext/boot.img` | anything | the image on the back slot card |
 | real ZX Next card | MEGA65 card | the real ZX Next card (the tray card is not used) |
-| empty | real ZX Next card | the real ZX Next card |
+| empty | real ZX Next card | should be the real ZX Next card, but reported not to boot: use the back slot |
+
+So you can keep your normal MEGA65 card in the bottom tray (with `/zxnext/boot.vhd` on it if you
+like) and put a real ZX Next card into the back slot when you want to use it: with the back slot
+empty, the core boots the image from the tray card.
 
 Don't swap or remove cards while the core is running: switch the MEGA65 off first.
 
@@ -127,7 +133,8 @@ Installation
    back slot is used before the card in the bottom tray (see "Which SD card is used" above).
 
    Or use a **real ZX Next SD card** (FAT32, `/TBBLUE.FW` in its root) instead: put it into the
-   back slot (see "Which SD card is used" above).
+   **back slot** (see "Which SD card is used" above). A real ZX Next card in the bottom tray was
+   reported not to boot.
 2. **The core.** Download the zip from the release (`megazxnext_v1.0_r4_r5_r6.zip`), unzip it
    and take the `.cor` file for your board (`megazxnext_r6.cor` for an R6; `_r5`/`_r4` are
    untested). For an R3/R3A, take `megazxnext_r3_test.zip` from the
@@ -181,10 +188,12 @@ Reset ZX Next and the help pages. The settings are not saved: the ZX Next owns t
 Known issues
 ------------
 
-* Only tested on R6. R4/R5 are untested. The R3/R3A test build has not run on an R3 yet, and
-  it has 1 MB of RAM (software that needs 2 MB does not run).
-* Not tested yet: a real ZX Next SD card (direct mode), VGA output, F13, the NMI keys (F9/F11),
-  the **Reset ZX Next** menu item.
+* Tested on R6 and (the 1 MB test build) on R3. R4/R5 are untested. The R3/R3A build has 1 MB
+  of RAM: software that needs 2 MB does not run.
+* A real ZX Next SD card works in the back slot; in the bottom tray it was reported not to boot.
+* The options menu settings are not remembered (no settings file: the ZX Next owns the SD card
+  while it runs). Requested by testers.
+* Not tested yet: F13, the NMI keys (F9/F11).
 * Real ZX Next SD cards must be FAT32; FAT16 cards are not supported.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the

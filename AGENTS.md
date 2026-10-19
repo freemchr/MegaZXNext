@@ -39,10 +39,12 @@ on the task, not on rediscovering the layout.
 The ZX Next's 2 MB of RAM live in the MEGA65's **SDRAM**, which only exists on **R4, R5, R6**.
 The **R3 / R3A** has no SDRAM: there the ZX Next gets **1 MB of block RAM** (`bram_zxn.vhd`), the
 memory of an unexpanded ZX Next (NextZXOS reports 768K). `main.vhd`'s generic `G_RAM_BRAM`
-(set by `mega65.vhd` from `G_BOARD = "MEGA65_R3"`) chooses. The R3 build meets timing but has
-**not run on an R3** yet (the maintainer has no R3). Tested on an R6: an R6 build with
+(set by `mega65.vhd` from `G_BOARD = "MEGA65_R3"`) chooses. The R3 build meets timing and was
+**reported working on an R3** by a tester (the maintainer has no R3): HDMI/VGA modes, scanlines,
+image and real-card boot (back slot), Reset ZX Next, joysticks, many games; 2 MB software (e.g.
+RogueCraft DX) returns to the NextZXOS menu, as expected. Tested on an R6: an R6 build with
 `G_RAM_BRAM` forced to true (bram_zxn instead of the SDRAM) boots NextZXOS, `.MEM` shows 768K and
-Warhawk Next (Layer 2) runs. Still unverified on an R3: its board top (SD routing) and controllers. 1 MB of block RAM uses
+Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 256 of the 365 RAMB36: the R3 build is at 316.
 
 ---
@@ -199,7 +201,9 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
   `ZXN_MOUNT` sets register 8 of `C_DEV_ZXN_IMG` (direct) instead of an extent table. `main.vhd`
   then disables `sd_image` and wires the ZX Next's SPI (`sd_cs0_n`, SCK, MOSI, MISO) straight to
   the slot, as on a real Next (SCK = CPU clock / 2, up to 14 MHz). FAT32 only (QNICE has to read
-  the card first). QNICE test case 5 covers the detection; not yet tested on hardware.
+  the card first). QNICE test case 5 covers the detection. Reported working on an R3 with the card in the **back
+  slot**; a real ZX Next card in the **bottom tray** was reported not to boot (cause unknown; the
+  image engine works from the tray, so suspect the ZX Next's SPI timing on the tray traces).
 - **Which slot:** M2M's `sdmux` uses the back slot if a card is in it, otherwise the bottom
   tray; `ZXN_MOUNT` reads `M2M$CSR_SD_ACTIVE` and the core then drives that slot.
 - **Sector engine** (`sd_image.vhd`): virtual sector N is found in the extent table (linear
@@ -367,8 +371,8 @@ check_timing -verbose -file check_timing.rpt
 The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.0 (R6
 tested, R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
 If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt handler saving
-an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test VGA, F13,
-NMI keys, .DSK, saving settings, Reset ZX Next; mouse support; R4/R5 testers.
+an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test F13,
+NMI keys, .DSK; real ZX Next card in the bottom tray; a settings file (tester request); mouse support; R4/R5 testers.
 Requested by the maintainer: a "MEGA65 Next" boot screen with the logo in
 `doc/assets/mega65-logo.png` instead of the firmware's "MiSTer Next" (the firmware picks that text
 by the machine ID 0xDA; not in our code). Keep the version in `config.vhd` (welcome screen,

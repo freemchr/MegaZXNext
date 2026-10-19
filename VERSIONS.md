@@ -9,7 +9,13 @@ the core as on R4-R6. R4, R5 and R6 are unchanged (their SDRAM constraints moved
 `CORE/CORE-SDRAM.xdc`).
 
 Tested on an R6 with the same block RAM instead of the SDRAM: NextZXOS boots, `.MEM` shows 768K,
-Warhawk Next runs. **Not yet run on an R3**: R3 owners, please report.
+Warhawk Next runs.
+
+**Tested on an R3** by a tester: works like the R6 version. HDMI modes, VGA, scanlines, booting
+from `/zxnext/boot.vhd` and from a real ZX Next SD card in the back slot, Reset ZX Next,
+joysticks and many games work. Software that needs 2 MB (e.g. RogueCraft DX) returns to the
+NextZXOS menu, as expected with 1 MB. A real ZX Next card in the bottom tray was reported not to
+boot (use the back slot). Requested: a settings file for the options menu.
 
 Version 1.0 - October 2026
 ==========================
