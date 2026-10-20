@@ -85,6 +85,7 @@ Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 │   ├── CORE-SDRAM.xdc      SDRAM multicycles, IOB packing, I/O timing (R4/R5/R6 .xpr only)
 │   └── CORE-R{3,4,5,6}.xpr Vivado 2026.1 projects (same sources, different top/XDC/G_BOARD)
 ├── release/zxnext/zxncfg   empty settings file (31 × 0xFF) for /zxnext/zxncfg on the SD card
+├── tools/bootscreen/       patches TBBLUE.FW: MegaZXNext logo instead of "MiSTer Next" (Python)
 └── doc/
     ├── m2m/                M2M conventions; exceptions.md = how to re-apply our changes on updates
     ├── m2m-v2.1.0-upgrade.md   plan for moving M2M/ to V2.1.0
@@ -399,9 +400,10 @@ If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt
 an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test F13,
 NMI keys, .DSK; mouse support; R4/R5 testers; maybe show the MBR partition type in the
 "Cannot mount the SD card" error.
-Requested by the maintainer: a "MEGA65 Next" boot screen with the logo in
-`doc/assets/mega65-logo.png` instead of the firmware's "MiSTer Next" (the firmware picks that text
-by the machine ID 0xDA; not in our code). Keep the version in `config.vhd` (welcome screen,
+Boot screen: the firmware shows "MiSTer Next" (picked by the machine ID 0xDA, not in our code).
+`tools/bootscreen/zxn_bootscreen.py` patches a user's `TBBLUE.FW` to show the MegaZXNext logo
+(`doc/assets/megazxnext-badge.png`, converted by `make_logo.py`); its header documents the
+firmware's screen format. Works on the R6; the firmware maintainers are fine with it. Keep the version in `config.vhd` (welcome screen,
 HELP_1, `CORENAME`) and `VERSIONS.md` in sync.
 
 ## 9. Lessons from other M2M ports

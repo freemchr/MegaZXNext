@@ -143,6 +143,22 @@ FAT32 card with the distribution unzipped onto it), then copy the whole card int
 (e.g. `dd` on Linux/macOS, Win32 Disk Imager on Windows). Tested: System/Next 24.11 in a
 2 GB image.
 
+### MegaZXNext boot screen (optional)
+
+The ZX Next firmware picks its boot screen by the machine ID, and this core reports the MiSTer
+one, so the firmware shows "MiSTer Next". [`tools/bootscreen`](tools/bootscreen) makes a copy
+of your `TBBLUE.FW` that shows the MegaZXNext logo instead (Python 3, nothing else):
+
+```
+python3 tools/bootscreen/zxn_bootscreen.py patch TBBLUE.FW TBBLUE-megazxnext.FW
+```
+
+Put the new file into the image (or onto the real ZX Next card) as `/TBBLUE.FW` and keep the
+original. A new distribution or firmware update brings back the MiSTer screen; run the tool
+again on the new `TBBLUE.FW`. Tested on the R6 with System/Next 24.11.
+
+![MegaZXNext boot screen](tools/bootscreen/preview.png)
+
 Installation
 ------------
 
@@ -242,7 +258,8 @@ Known issues
   are not supported.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
-  machine ID the core reports).
+  machine ID the core reports). `tools/bootscreen` changes it to the MegaZXNext logo (see "What
+  goes on the SD card").
 * +3 disk images (.DSK) have not been tested yet.
 
 Reporting issues
