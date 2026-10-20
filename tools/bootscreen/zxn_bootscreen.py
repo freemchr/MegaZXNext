@@ -18,6 +18,13 @@
 # only moves and XORs bits, i.e. it is linear over GF(2), so it is inverted by solving one 56x72
 # bit system. Python 3 standard library only.
 #
+# Which page is decoded: display_bootscreen loads the screen into RAM page 0 at 0x0000, then maps
+# page 1 to load 256 more bytes at 0x3F00. _vdp_reveal starts with page 1 mapped, compares its
+# first 4 bytes (flash data stored there by check_coreversion) with the marker, and maps page 1
+# again if they match, page 0 otherwise. They do not match, so page 0, the loaded screen, is
+# decoded; the unchanged MiSTer screen appearing on the MEGA65 confirms that path. The patch only
+# changes the screen data, not page 1.
+#
 # done by Chris Freeman in 2026 and licensed under GPL v3
 
 import os
