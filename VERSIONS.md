@@ -16,6 +16,12 @@ reported the R3 test build working like the R6 version.
 Known issues: as V1.0, plus: a real ZX Next SD card in the bottom tray was reported not to boot
 (use the back slot); settings are not saved with a real ZX Next SD card.
 
+Update after the release: the bottom tray report was caused by the card, not the core. It was
+FAT32 but had the MBR partition type `0x07` (exFAT/NTFS) left over from an earlier format, which
+the MEGA65 refuses ("Cannot mount the SD card"). After setting the type to `0x0C` the card booted
+in the back slot and in the bottom tray. Format real ZX Next cards with the official
+[SD Card Formatter](https://www.sdcard.org/downloads/formatter/) (see README).
+
 R3 / R3A test build (1 MB) - October 2026
 ==========================================
 

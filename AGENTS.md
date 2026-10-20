@@ -206,9 +206,14 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
   `ZXN_MOUNT` sets register 8 of `C_DEV_ZXN_IMG` (direct) instead of an extent table. `main.vhd`
   then disables `sd_image` and wires the ZX Next's SPI (`sd_cs0_n`, SCK, MOSI, MISO) straight to
   the slot, as on a real Next (SCK = CPU clock / 2, up to 14 MHz). FAT32 only (QNICE has to read
-  the card first). QNICE test case 5 covers the detection. Reported working on an R3 with the card in the **back
-  slot**; a real ZX Next card in the **bottom tray** was reported not to boot (cause unknown; the
-  image engine works from the tray, so suspect the ZX Next's SPI timing on the tray traces).
+  the card first). QNICE test case 5 covers the detection. Reported working in the **back slot**
+  (R3, R6) and, after the fix below, in the **bottom tray** too. The earlier "does not boot in the tray" report was the
+  card: FAT32 inside, but MBR partition type `0x07` (left over from exFAT). QNICE's `f32_mnt_sd`
+  accepts only `0x0B`/`0x0C`, so the Shell says "Cannot mount the SD card" before it looks for
+  `/TBBLUE.FW`; Windows reads such a card fine. Fixed by setting the type to `0x0C`
+  (`Set-Partition -MbrType 12`), no reformat. README tells users to format ZX Next cards with the
+  SD Card Formatter (sdcard.org) only, and never to reformat the MEGA65 card (hidden system
+  partition). Possible improvement: show the partition type in the "Cannot mount" error.
 - **Settings file** (`zxn_cfg.asm`, `SAVE_SETTINGS = true`, `CFG_FILE = /zxnext/zxncfg`, 31
   bytes, an empty one is `release/zxnext/zxncfg`): the Shell loads it at startup as usual.
   `ZXN_CFG_INIT` (PREP_START) then takes the file handle away from the Shell (`CONFIG_FILE` = 0),
@@ -392,7 +397,8 @@ The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`.
 tested, R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
 If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt handler saving
 an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test F13,
-NMI keys, .DSK; real ZX Next card in the bottom tray; mouse support; R4/R5 testers.
+NMI keys, .DSK; mouse support; R4/R5 testers; maybe show the MBR partition type in the
+"Cannot mount the SD card" error.
 Requested by the maintainer: a "MEGA65 Next" boot screen with the logo in
 `doc/assets/mega65-logo.png` instead of the firmware's "MiSTer Next" (the firmware picks that text
 by the machine ID 0xDA; not in our code). Keep the version in `config.vhd` (welcome screen,

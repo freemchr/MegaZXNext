@@ -52,7 +52,7 @@ There are two ways to give the ZX Next its SD card:
    the MEGA65's normal SD card next to everything else. The ZX Next only ever touches that file.
 2. **A real ZX Next SD card** (new in V1.0): a FAT32 card prepared for the ZX Next, for
    example the card from a real ZX Spectrum Next or one you made with the ZX Next's own tools,
-   put into the MEGA65's **back slot** (external micro SD). The
+   put into the MEGA65's **back slot** (external micro SD) or the bottom tray. The
    core uses it when the card has no image on it but has `/TBBLUE.FW` in its root. The ZX Next
    then reads and writes the card directly, as on a real Next. FAT16 cards are not supported
    (the MEGA65 needs to read the card at startup): copy the files of a FAT16 card onto a FAT32
@@ -97,7 +97,7 @@ used at all.
 | empty | MEGA65 card with `/zxnext/boot.img` | the image on the bottom tray card |
 | MEGA65 card with `/zxnext/boot.img` | anything | the image on the back slot card |
 | real ZX Next card | MEGA65 card | the real ZX Next card (the tray card is not used) |
-| empty | real ZX Next card | should be the real ZX Next card, but reported not to boot: use the back slot |
+| empty | real ZX Next card | the real ZX Next card |
 
 So you can keep your normal MEGA65 card in the bottom tray (with `/zxnext/boot.vhd` on it if you
 like) and put a real ZX Next card into the back slot when you want to use it: with the back slot
@@ -156,9 +156,14 @@ Installation
    back slot is used before the card in the bottom tray (see "Which SD card is used" above).
 
    Or use a **real ZX Next SD card** (FAT32, `/TBBLUE.FW` in its root) instead: put it into the
-   **back slot** (see "Which SD card is used" above). Format it with the SD Card Formatter (see
-   the warning above). A real ZX Next card in the bottom tray was reported not to boot, but that
-   card had the wrong partition type; after the repair it booted from the bottom tray too.
+   **back slot** or, with the back slot empty, into the bottom tray (see "Which SD card is used"
+   above).
+
+   > [!CAUTION]
+   > Again: format a real ZX Next card **only with the official
+   > [SD Card Formatter](https://www.sdcard.org/downloads/formatter/)**, as the ZX Next website
+   > says. Cards formatted with Windows or other tools are the usual cause of "Cannot mount the SD
+   > card" (wrong partition type, see the warning above). Never reformat the MEGA65's own card.
 2. **The core.** Download the zip from the
    [latest release](https://github.com/freemchr/MegaZXNext/releases/latest)
    (`megazxnext_v1.1.zip`), unzip it and take the `.cor` file for your board
