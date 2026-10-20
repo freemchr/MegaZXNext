@@ -245,6 +245,11 @@ port (
    fw_sd2_clk_i            : in  std_logic := '0';
    fw_sd2_mosi_i           : in  std_logic := '1';
 
+   -- Raw joystick port pins for the Amiga mouse (patched top level files): asynchronous, not
+   -- debounced. 4 = fire, 3 = up, 2 = down, 1 = left, 0 = right
+   joy_1_pins_n_i          : in  std_logic_vector(4 downto 0) := (others => '1');
+   joy_2_pins_n_i          : in  std_logic_vector(4 downto 0) := (others => '1');
+
    -- SDRAM - 32M x 16 bit, 3.3V VCC. U44 = IS42S16320F-6BL
    -- The tri-state buffers for DQ are inferred in the top level file
    sdram_clk_o             : out std_logic;
@@ -521,6 +526,9 @@ begin
          pot1_y_i             => main_pot1_y_i,
          pot2_x_i             => main_pot2_x_i,
          pot2_y_i             => main_pot2_y_i,
+         joy_1_pins_n_i       => joy_1_pins_n_i,
+         joy_2_pins_n_i       => joy_2_pins_n_i,
+         flip_joys_i          => main_osm_control_i(C_MENU_FLIP_JOYS),
 
          rtc_i                => main_rtc_i,
 

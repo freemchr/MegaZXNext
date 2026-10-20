@@ -84,6 +84,12 @@ entity main is
       pot2_x_i                : in  std_logic_vector(7 downto 0);
       pot2_y_i                : in  std_logic_vector(7 downto 0);
 
+      -- Raw pins of the physical joystick ports (asynchronous, not debounced, not flipped) for
+      -- the Amiga mouse: 4 = fire, 3 = up, 2 = down, 1 = left, 0 = right
+      joy_1_pins_n_i          : in  std_logic_vector(4 downto 0);
+      joy_2_pins_n_i          : in  std_logic_vector(4 downto 0);
+      flip_joys_i             : in  std_logic;              -- OSM "Flip joystick ports"
+
       -- MEGA65 real time clock (MiSTer format)
       rtc_i                   : in  std_logic_vector(64 downto 0);
 
@@ -170,6 +176,25 @@ architecture synthesis of main is
    -- joysticks: active high  MODE X Z Y START A C B U D L R
    signal joy_left            : std_logic_vector(11 downto 0);
    signal joy_right           : std_logic_vector(11 downto 0);
+   signal joy_left_off        : std_logic;
+   signal joy_right_off       : std_logic;
+
+   -- Amiga mouse (amiga_mouse.vhd) for the Kempston mouse
+   signal mouse1_active       : std_logic;
+   signal mouse2_active       : std_logic;
+   signal mouse1_count_x      : unsigned(10 downto 0);
+   signal mouse1_count_y      : unsigned(10 downto 0);
+   signal mouse2_count_x      : unsigned(10 downto 0);
+   signal mouse2_count_y      : unsigned(10 downto 0);
+   signal mouse1_buttons      : std_logic_vector(2 downto 0);
+   signal mouse2_buttons      : std_logic_vector(2 downto 0);
+   signal mouse_count_x       : unsigned(10 downto 0);
+   signal mouse_count_y       : unsigned(10 downto 0);
+   signal mouse_buttons       : std_logic_vector(2 downto 0);
+   signal zxn_mouse_x         : std_logic_vector(7 downto 0);
+   signal zxn_mouse_y         : std_logic_vector(7 downto 0);
+   signal zxn_mouse_button    : std_logic_vector(2 downto 0);
+   signal zxn_mouse_control   : std_logic_vector(2 downto 0);
 
    -- audio
    signal audio_l_u           : std_logic_vector(11 downto 0);
@@ -303,6 +328,10 @@ begin
 
          joy_left          => joy_left,
          joy_right         => joy_right,
+         mouse_x_i         => zxn_mouse_x,
+         mouse_y_i         => zxn_mouse_y,
+         mouse_button_i    => zxn_mouse_button,
+         mouse_control_o   => zxn_mouse_control,
 
          audio_L           => audio_l_u,
          audio_R           => audio_r_u,
@@ -433,10 +462,77 @@ begin
    -- The MEGA65's (single) fire button is fire button 1 ("B"), which is the Kempston fire.
    ---------------------------------------------------------------------------------------------
 
-   joy_left  <= "0000000" & (not joy_1_fire_n_i) & (not joy_1_up_n_i) & (not joy_1_down_n_i) &
+   -- A port with a mouse is not a joystick. joy_1/joy_2 are flipped by the framework, the
+   -- mouse ports are the physical ones.
+   joy_left_off  <= mouse1_active when flip_joys_i = '0' else mouse2_active;
+   joy_right_off <= mouse2_active when flip_joys_i = '0' else mouse1_active;
+
+   joy_left  <= (others => '0') when joy_left_off = '1' else
+                "0000000" & (not joy_1_fire_n_i) & (not joy_1_up_n_i) & (not joy_1_down_n_i) &
                             (not joy_1_left_n_i) & (not joy_1_right_n_i);
-   joy_right <= "0000000" & (not joy_2_fire_n_i) & (not joy_2_up_n_i) & (not joy_2_down_n_i) &
+   joy_right <= (others => '0') when joy_right_off = '1' else
+                "0000000" & (not joy_2_fire_n_i) & (not joy_2_up_n_i) & (not joy_2_down_n_i) &
                             (not joy_2_left_n_i) & (not joy_2_right_n_i);
+
+   ---------------------------------------------------------------------------------------------
+   -- Kempston mouse: an Amiga mouse in either joystick port (port 1 first). It is detected when
+   -- it moves; a long press of the reset button (ZX Next hard reset) forgets it again.
+   ---------------------------------------------------------------------------------------------
+
+   i_mouse1 : entity work.amiga_mouse
+      port map (
+         clk_i       => clk_main_i,
+         reset_i     => reset_hard_i,
+         up_n_i      => joy_1_pins_n_i(3),
+         down_n_i    => joy_1_pins_n_i(2),
+         left_n_i    => joy_1_pins_n_i(1),
+         right_n_i   => joy_1_pins_n_i(0),
+         fire_n_i    => joy_1_pins_n_i(4),
+         pot_x_i     => pot1_x_i,
+         pot_y_i     => pot1_y_i,
+         active_o    => mouse1_active,
+         count_x_o   => mouse1_count_x,
+         count_y_o   => mouse1_count_y,
+         buttons_o   => mouse1_buttons
+      ); -- i_mouse1
+
+   i_mouse2 : entity work.amiga_mouse
+      port map (
+         clk_i       => clk_main_i,
+         reset_i     => reset_hard_i,
+         up_n_i      => joy_2_pins_n_i(3),
+         down_n_i    => joy_2_pins_n_i(2),
+         left_n_i    => joy_2_pins_n_i(1),
+         right_n_i   => joy_2_pins_n_i(0),
+         fire_n_i    => joy_2_pins_n_i(4),
+         pot_x_i     => pot2_x_i,
+         pot_y_i     => pot2_y_i,
+         active_o    => mouse2_active,
+         count_x_o   => mouse2_count_x,
+         count_y_o   => mouse2_count_y,
+         buttons_o   => mouse2_buttons
+      ); -- i_mouse2
+
+   mouse_count_x <= mouse1_count_x when mouse1_active = '1' else mouse2_count_x;
+   mouse_count_y <= mouse1_count_y when mouse1_active = '1' else mouse2_count_y;
+   mouse_buttons <= mouse1_buttons when mouse1_active = '1' else mouse2_buttons;
+
+   -- nextreg 0x0A: DPI (1:0) divides the movement by 1, 2, 4 or 8 (default 2), bit 2 swaps the
+   -- left and right button (as on MiSTer).
+   mouse_proc : process (clk_main_i)
+      variable shift : natural range 0 to 3;
+   begin
+      if rising_edge(clk_main_i) then
+         shift       := to_integer(unsigned(zxn_mouse_control(1 downto 0)));
+         zxn_mouse_x <= std_logic_vector(resize(shift_right(mouse_count_x, shift), 8));
+         zxn_mouse_y <= std_logic_vector(resize(shift_right(mouse_count_y, shift), 8));
+         if zxn_mouse_control(2) = '0' then
+            zxn_mouse_button <= mouse_buttons;
+         else
+            zxn_mouse_button <= mouse_buttons(2) & mouse_buttons(0) & mouse_buttons(1);
+         end if;
+      end if;
+   end process mouse_proc;
 
    ---------------------------------------------------------------------------------------------
    -- Video: RGB333 @ 14 MHz pixel clock, re-timed into the 28 MHz main clock domain.
