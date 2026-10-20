@@ -27,3 +27,4 @@ CORE/m2m-rom/test/*.lis
 CORE/m2m-rom/test/*.out
 CORE/m2m-rom/test/*.rom
 CORE/sim/boot_trace*.txt
+__pycache__/
