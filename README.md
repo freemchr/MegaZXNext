@@ -58,6 +58,26 @@ There are two ways to give the ZX Next its SD card:
    (the MEGA65 needs to read the card at startup): copy the files of a FAT16 card onto a FAT32
    card.
 
+> [!WARNING]
+> **Format the card with the official [SD Card Formatter](https://www.sdcard.org/downloads/formatter/)**
+> of the SD Association, as the ZX Next website recommends, and not with Windows or other tools.
+> The MEGA65 needs an MBR partition table with partition 1 of type `0x0B` or `0x0C` (FAT32).
+> "FAT32" alone is not enough: a card that was exFAT before can keep the type `0x07`, Windows
+> reads it without complaint, but the MEGA65 says **"Cannot mount the SD card"**. Use a card of
+> **32 GB or less**: the SD Card Formatter formats larger cards (SDXC) as exFAT, which the MEGA65
+> cannot read.
+>
+> To check or repair a card without reformatting (Windows PowerShell as administrator, `N` = the
+> card's disk number from `Get-Disk`):
+>
+> ```powershell
+> Get-Partition -DiskNumber N | Select-Object PartitionNumber, MbrType   # must be 11 or 12
+> Set-Partition -DiskNumber N -PartitionNumber 1 -MbrType 12            # if it is 7
+> ```
+>
+> (or `diskpart`: `select disk N`, `select partition 1`, `set id=0C override`). The data on the
+> card stays as it is.
+
 ### Which SD card is used
 
 The core uses **one** SD card, chosen once when it starts:
@@ -133,8 +153,9 @@ Installation
    back slot is used before the card in the bottom tray (see "Which SD card is used" above).
 
    Or use a **real ZX Next SD card** (FAT32, `/TBBLUE.FW` in its root) instead: put it into the
-   **back slot** (see "Which SD card is used" above). A real ZX Next card in the bottom tray was
-   reported not to boot.
+   **back slot** (see "Which SD card is used" above). Format it with the SD Card Formatter (see
+   the warning above). A real ZX Next card in the bottom tray was reported not to boot, but that
+   card had the wrong partition type; after the repair it booted from the bottom tray too.
 2. **The core.** Download the zip from the
    [latest release](https://github.com/freemchr/MegaZXNext/releases/latest)
    (`megazxnext_v1.1.zip`), unzip it and take the `.cor` file for your board
@@ -201,11 +222,16 @@ Known issues
 
 * Tested on R6 and R3. R4/R5 and the R3A are untested. The R3/R3A build has 1 MB
   of RAM: software that needs 2 MB does not run.
-* A real ZX Next SD card works in the back slot; in the bottom tray it was reported not to boot.
+* "Cannot mount the SD card" with a real ZX Next card that Windows reads fine: the partition type
+  is probably `0x07` (exFAT/NTFS) instead of `0x0B`/`0x0C` (FAT32), see the warning in "What goes
+  on the SD card". Reported on the R3 and the R6; after the repair the card booted in the back slot
+  and in the bottom tray. The earlier report "does not boot in the bottom tray" was with that card,
+  so it probably had the same cause.
 * The options menu settings are only remembered with an image and a `/zxnext/zxncfg` file (see
   "Options menu"), not with a real ZX Next SD card. Tested on the R6.
 * Not tested yet: F13, the NMI keys (F9/F11).
-* Real ZX Next SD cards must be FAT32; FAT16 cards are not supported.
+* Real ZX Next SD cards must be FAT32 (MBR partition type `0x0B`/`0x0C`); FAT16 and exFAT cards
+  are not supported.
 * No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
   machine ID the core reports).
