@@ -31,4 +31,4 @@ Files:
 Tested with the firmware of System/Next 24.11 (both `TBBLUE.FW` files in the distribution).
 The firmware is GPL v3; its source is in `src/firmware` of the System/Next distribution.
 
-Not tested on a MEGA65 yet.
+Tested on a MEGA65 R6 (2026-10-20): the boot screen shows the MegaZXNext logo.
