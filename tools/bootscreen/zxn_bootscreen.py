@@ -2,8 +2,9 @@
 # MegaZXNext: puts the MegaZXNext logo on the boot screen of the ZX Next firmware (TBBLUE.FW).
 #
 # The firmware picks its boot screen by the machine ID: the core reports 0xDA ("MiSTer"), so it
-# shows the "MiSTer Next" picture. This tool replaces the logo part (character rows 0..9) of
-# that picture in a copy of TBBLUE.FW and keeps the rest of it. It never changes the input file.
+# shows the "MiSTer Next" picture. This tool replaces the logo (character rows 0..9) and the
+# credit line (row 23) of that picture in a copy of TBBLUE.FW and keeps the rest of it ("Powered
+# by NextZXOS"). It never changes the input file.
 #
 #   zxn_bootscreen.py patch TBBLUE.FW OUT.FW [--logo megazxnext.scr] [--screen 6]
 #   zxn_bootscreen.py show  TBBLUE.FW DIR          (all boot screens as PNG)
@@ -32,7 +33,7 @@ NUM_SCREENS    = 8
 MARKER         = bytes([0x55, 0xAA, 0x5A, 0xA5])
 GROUPS         = 988
 MISTER_SCREEN  = 6                  # s[0xDA >> 4] in boot.c
-LOGO_ROWS      = 10                 # character rows taken from the logo
+LOGO_ROWS      = list(range(10)) + [23]   # character rows taken from the logo: logo, credit line
 
 
 def reveal(data):
@@ -159,12 +160,13 @@ def screens_offset(fw):
 
 
 def scr_rows_merge(old, logo):
-   """old screen with character rows 0..LOGO_ROWS-1 (pixels and attributes) from logo."""
+   """old screen with the character rows LOGO_ROWS (pixels and attributes) from logo."""
    new = bytearray(old)
-   for y in range(LOGO_ROWS * 8):
-      addr = ((y & 0xc0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2)
-      new[addr:addr + 32] = logo[addr:addr + 32]
-   new[6144:6144 + LOGO_ROWS * 32] = logo[6144:6144 + LOGO_ROWS * 32]
+   for row in LOGO_ROWS:
+      for y in range(row * 8, row * 8 + 8):
+         addr = ((y & 0xc0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2)
+         new[addr:addr + 32] = logo[addr:addr + 32]
+      new[6144 + row * 32:6144 + row * 32 + 32] = logo[6144 + row * 32:6144 + row * 32 + 32]
    return bytes(new)
 
 

@@ -3,8 +3,9 @@ MegaZXNext boot screen for the ZX Next firmware
 
 The ZX Next firmware (`TBBLUE.FW`) picks its boot screen by the machine ID. This core reports
 0xDA ("MiSTer"), so the firmware shows "MiSTer Next". `zxn_bootscreen.py` writes a copy of
-`TBBLUE.FW` in which that screen shows the MegaZXNext logo instead; the bottom part of the
-screen ("Powered by NextZXOS") and the other boot screens stay as they are.
+`TBBLUE.FW` in which that screen shows the MegaZXNext logo and the credit line "Ported by: Chris
+Freeman with features from @Benitoss" instead; "Powered by NextZXOS" and the other boot screens
+stay as they are.
 
 ![preview](preview.png)
 
@@ -24,7 +25,7 @@ Files:
 * `zxn_bootscreen.py`: the patch tool. Its header explains how the firmware stores the screens.
 * `make_logo.py`: makes `megazxnext.scr` from `doc/assets/megazxnext-badge.png`
   (`python3 make_logo.py ../../doc/assets/megazxnext-badge.png megazxnext.scr preview.png`).
-  Only the top 10 character rows are used.
+  Only the top 10 character rows (logo) and row 23 (credit line, `CREDIT` in the script) are used.
 * `megazxnext.scr`: the logo as a 6912 byte ZX Spectrum screen.
 
 Tested with the firmware of System/Next 24.11 (both `TBBLUE.FW` files in the distribution).

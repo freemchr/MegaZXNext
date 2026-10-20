@@ -5,8 +5,9 @@
 # The ULA allows one ink colour per 8x8 cell, so the logo is laid out on the cell grid instead
 # of being scaled as a whole: "MegaZX" and "Next" are scaled from the badge, the four colour
 # stripes are drawn so that each one lies in its own character row (7 pixel pitch), and the
-# dark grey badge, which the ULA cannot show, becomes a grey outline. Only character rows
-# 0..LOGO_ROWS-1 are used; zxn_bootscreen.py keeps the rest of the original screen.
+# dark grey badge, which the ULA cannot show, becomes a grey outline. Character row 23 gets the
+# credit line in the small font of the original screen. Only the rows LOGO_ROWS are used;
+# zxn_bootscreen.py keeps the rest of the original screen.
 #
 # Usage: make_logo.py badge.png megazxnext.scr [preview.png]
 #
@@ -16,7 +17,38 @@ import struct
 import sys
 import zlib
 
-LOGO_ROWS = 10                      # character rows replaced by the logo
+LOGO_ROWS = list(range(10)) + [23]  # character rows replaced: logo, credit line
+
+# Credit line (row 23): text and ULA colour. A colour change starts a new character cell.
+CREDIT = [('Ported by: ', 7), ('Chris Freeman', 2), (' with features from ', 7), ('@Benitoss', 2)]
+
+# The small font of the firmware screens: 7 pixel rows (y = 184..190 in row 23), mostly copied
+# from the original credit line; C, F, a, f, h, m, u and w drawn in the same style.
+FONT = {
+   ' ': ['...'] * 7,
+   ':': ['.', '.', '.', '#', '.', '#', '.'],
+   '@': ['.....', '.###.', '....#', '###.#', '#.#.#', '#...#', '.###.'],
+   'B': ['....', '###.', '#..#', '###.', '#..#', '#..#', '###.'],
+   'C': ['....', '.###', '#...', '#...', '#...', '#...', '.###'],
+   'F': ['....', '####', '#...', '###.', '#...', '#...', '#...'],
+   'P': ['....', '###.', '#..#', '#..#', '###.', '#...', '#...'],
+   'a': ['....', '....', '.##.', '...#', '.###', '#..#', '.###'],
+   'b': ['....', '#...', '###.', '#..#', '#..#', '#..#', '####'],
+   'd': ['....', '...#', '.###', '#..#', '#..#', '#..#', '####'],
+   'e': ['....', '....', '.##.', '#..#', '####', '#...', '.###'],
+   'f': ['...', '.##', '#..', '###', '#..', '#..', '#..'],
+   'h': ['....', '#...', '###.', '#..#', '#..#', '#..#', '#..#'],
+   'i': ['#', '.', '#', '#', '#', '#', '#'],
+   'm': ['.....', '.....', '####.', '#.#.#', '#.#.#', '#.#.#', '#.#.#'],
+   'n': ['....', '....', '#.##', '##.#', '#..#', '#..#', '#..#'],
+   'o': ['....', '....', '.##.', '#..#', '#..#', '#..#', '.##.'],
+   'r': ['...', '...', '#.#', '##.', '#..', '#..', '#..'],
+   's': ['....', '....', '.##.', '#...', '.##.', '...#', '.##.'],
+   't': ['...', '#..', '##.', '#..', '#..', '#..', '.##'],
+   'u': ['....', '....', '#..#', '#..#', '#..#', '#..#', '.###'],
+   'w': ['.....', '.....', '#...#', '#...#', '#.#.#', '#.#.#', '.#.#.'],
+   'y': ['...', '...', '#.#', '#.#', '###', '..#', '##.'],
+}
 
 CAP     = 19                        # height of the capitals in pixels
 ROW0    = 2                         # character row of the first (blue) stripe
@@ -118,7 +150,7 @@ def make_logo(name):
    nx = sc * 8 + 25
    top = ROW0 * 8 + 7                                              # cap top, see stripes below
 
-   ink = [[None] * 256 for _ in range(LOGO_ROWS * 8)]              # (colour, bright) per pixel
+   ink = [[None] * 256 for _ in range(192)]                        # (colour, bright) per pixel
    for img, x0 in ((mega, mx), (nxt, nx)):
       for y, line in enumerate(img):
          for x, on in enumerate(line):
@@ -149,8 +181,23 @@ def make_logo(name):
          if inside(x + .5, y + .5, 0) and not inside(x + .5, y + .5, 1.2) and ink[y][x] is None:
             ink[y][x] = (7, False)
 
+   # Credit line, at the position of the original one.
+   x, last = 11, None
+   for text, col in CREDIT:
+      if last is not None and last // 8 == x // 8:
+         x = (x // 8 + 1) * 8                                      # new colour: new cell
+      for ch in text:
+         glyph = FONT[ch]
+         for dy, line in enumerate(glyph):
+            for dx, p in enumerate(line):
+               if p == '#':
+                  ink[184 + dy][x + dx] = (col, True)
+                  last = x + dx
+         x += len(glyph[0]) + 1
+   assert x <= 256, 'credit line too long'
+
    scr = bytearray(6912)
-   for cy_ in range(LOGO_ROWS):
+   for cy_ in LOGO_ROWS:
       for cx_ in range(32):
          cell = [ink[cy_ * 8 + y][cx_ * 8 + x] for y in range(8) for x in range(8)]
          used = [c for c in cell if c]
