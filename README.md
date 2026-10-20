@@ -59,8 +59,11 @@ There are two ways to give the ZX Next its SD card:
    card.
 
 > [!WARNING]
-> **Format the card with the official [SD Card Formatter](https://www.sdcard.org/downloads/formatter/)**
+> **Format the ZX Next card with the official [SD Card Formatter](https://www.sdcard.org/downloads/formatter/)**
 > of the SD Association, as the ZX Next website recommends, and not with Windows or other tools.
+> This is only about the separate ZX Next card. **Do not reformat the MEGA65's own SD card**: the
+> MEGA65 prepares it itself, with a hidden system partition that a reformat would erase. If the
+> MEGA65 card shows the problem below, only repair the partition type.
 > The MEGA65 needs an MBR partition table with partition 1 of type `0x0B` or `0x0C` (FAT32).
 > "FAT32" alone is not enough: a card that was exFAT before can keep the type `0x07`, Windows
 > reads it without complaint, but the MEGA65 says **"Cannot mount the SD card"**. Use a card of
