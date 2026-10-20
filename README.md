@@ -225,6 +225,19 @@ change it: press Space while the firmware boots, select the machine, edit its se
 the joysticks are on the second page) and set **Right Joy** (port 2) or **Left Joy** (port 1) to
 **Kempston 1**, then save. The ZX Next stores it in the image. One fire button is supported.
 
+### Mouse
+
+An **Amiga mouse** in either joystick port is the ZX Next's **Kempston mouse**. Nothing to set
+up: the core notices the mouse the first time you move it. Left button = left, right button =
+right. Its speed is the ZX Next's own mouse setting (DPI, nextreg 0x0A).
+
+Once the core has seen the mouse, that port is a mouse only, not a joystick: if you then plug a
+joystick into it, hold the MEGA65's **reset button** for a moment (ZX Next hard reset) or
+restart the core. Use the other port for a joystick. Commodore 1351 mice are not supported.
+
+Tested on an R6 with an Amiga mouse in port 1 (movement, left and right button). Port 2 and the
+middle button are not tested yet.
+
 Options menu
 ------------
 
@@ -256,7 +269,6 @@ Known issues
 * Not tested yet: F13, the NMI keys (F9/F11).
 * Real ZX Next SD cards must be FAT32 (MBR partition type `0x0B`/`0x0C`); FAT16 and exFAT cards
   are not supported.
-* No mouse: the ZX Next's (PS/2) mouse is not connected to the MEGA65's mouse.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
   machine ID the core reports). `tools/bootscreen` changes it to the MegaZXNext logo (see "What
   goes on the SD card").

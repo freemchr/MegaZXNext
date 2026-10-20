@@ -38,7 +38,8 @@ The MEGA65 top level of the ZX Next (entity `zxnext_top_m65`). Changes:
 
 * No PS/2 keyboard: the membrane matrix (8 rows x 7 columns) is driven directly
   by `CORE/vhdl/keyboard.vhd`.
-* No PS/2 mouse: the mouse inputs are idle.
+* No PS/2 mouse: the Kempston mouse inputs are ports of `zxnext_top_m65`, fed
+  by `main.vhd` from an Amiga mouse in a joystick port (`amiga_mouse.vhd`).
 * CPU clock: a `BUFGMUX_CTRL` switches between the register driven clock
   `CLK_i0` (3.5/7/14 MHz) and `CLK_28` instead of MiSTer's fabric clock mux.
   `CORE/CORE.xdc` names `CLK_i0_reg` and `i_bufgmux_cpu`: keep these names.
@@ -80,8 +81,8 @@ MiSTer2MEGA65
 
 Framework version: V2.0.1. Only the four board top files are changed:
 `M2M/vhdl/top_mega65-r3.vhd`, `top_mega65-r4.vhd`, `top_mega65-r5.vhd` and
-`top_mega65-r6.vhd`. In R4-R6 both 1 and 2 below; in R3 (no SDRAM, the ZX Next
-RAM is block RAM) only 2:
+`top_mega65-r6.vhd`. In R4-R6 1, 2 and 4 below; in R3 (no SDRAM, the ZX Next
+RAM is block RAM) 2 and 4:
 
 1. **SDRAM:** remove the SDRAM tie-offs, add a generate with the DQ tri-state
    buffers (`sdram_dq_out`/`sdram_dq_oe_n`/`sdram_dq_in`), and connect all
@@ -93,11 +94,18 @@ RAM is block RAM) only 2:
    once the Shell has mounted it. MISO and card detect go from the pins to the
    framework, MISO also to the CORE.
 3. A comment: "54 MHz" → "28 MHz".
+4. **Joystick pins for the Amiga mouse:** the raw pins of both joystick ports
+   (`fa_*_n_i`, `fb_*_n_i`) also go to the CORE's `joy_1_pins_n_i` and
+   `joy_2_pins_n_i` (4 = fire, 3 = up, 2 = down, 1 = left, 0 = right). M2M's
+   joystick debouncer needs a line to be stable for 1 ms, which loses the
+   quadrature steps of a fast moving mouse. The framework still gets the pins
+   as before.
 
 For this, `MEGA65_Core` (`CORE/vhdl/mega65.vhd`) has additional `sdram_*`,
-`sd_*`, `sd2_*` and `fw_sd*` ports that the stock M2M entity does not have.
+`sd_*`, `sd2_*`, `fw_sd*` and `joy_*_pins_n_i` ports that the stock M2M entity
+does not have.
 
-When you update M2M, re-apply 1 and 2 to the new board tops (a three-way merge
+When you update M2M, re-apply 1, 2 and 4 to the new board tops (a three-way merge
 of the old stock file, the new stock file and our file works).
 `doc/m2m-v2.1.0-upgrade.md` describes the update to V2.1.0.
 
