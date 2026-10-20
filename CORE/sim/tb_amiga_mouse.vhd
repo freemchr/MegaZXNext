@@ -63,11 +63,11 @@ begin
       );
 
    process
-      -- x: a = H (down), b = HQ (right); y: a = V (up), b = VQ (left)
+      -- x: a = HQ (right), b = H (down); y: a = V (up), b = VQ (left)
       procedure set_lines is
       begin
-         down_n  <= C_AB(x_state mod 4)(1);
-         right_n <= C_AB(x_state mod 4)(0);
+         right_n <= C_AB(x_state mod 4)(1);
+         down_n  <= C_AB(x_state mod 4)(0);
          up_n    <= C_AB(y_state mod 4)(1);
          left_n  <= C_AB(y_state mod 4)(0);
       end procedure;
@@ -104,9 +104,9 @@ begin
       up_n <= '0'; down_n <= '0'; wait for 500 ns; up_n <= '1'; down_n <= '1'; wait for 5 us;
       assert active = '0' report "2: glitch detected as a mouse" severity error;
 
-      -- 3. The mouse moves: x right 3 steps (H goes low, then V), detection when up and down
+      -- 3. The mouse moves: x right 2 steps (H goes low), then y 2 steps (V goes low), detection when up and down
       --    are both low. x_state 0 = 11, y_state 0 = 11.
-      move('x', 2, 1, 20 us);                 -- x: 10, 00 -> H (down) = 0
+      move('x', 2, 1, 20 us);                 -- x: 10, 00 -> H (down) = 0 (and HQ)
       move('y', 2, 1, 20 us);                 -- y: 10, 00 -> V (up) = 0: detected
       assert active = '1' report "3: mouse not detected" severity error;
       x0 := count_x; y0 := count_y;

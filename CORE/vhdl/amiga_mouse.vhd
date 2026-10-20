@@ -122,8 +122,9 @@ begin
             end if;
          end loop;
 
-         -- quadrature decoding: x = H (down) and HQ (right), y = V (up) and VQ (left)
-         now_x  := pins(2) & pins(0);
+         -- quadrature decoding: x = HQ (right) and H (down), y = V (up) and VQ (left), in the order
+         -- that counts right and up (checked on an R6 with an Amiga mouse)
+         now_x  := pins(0) & pins(2);
          now_y  := pins(3) & pins(1);
          last_x <= now_x;
          last_y <= now_y;
