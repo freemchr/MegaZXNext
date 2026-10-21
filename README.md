@@ -15,14 +15,15 @@ The ZX Next is an enhanced ZX Spectrum: a Z80N CPU at 3.5, 7, 14 or 28 MHz,
 Layer 2 bitmap graphics, tilemap, sprites, copper, DMA, three AY sound chips, DivMMC and
 Multiface, and 2 MB of RAM. It runs NextZXOS and the classic Spectrum 48K, 128K and +3 software.
 
-Status: V1.1, tested on the MEGA65 R6 and R3
+Status: V1.2, tested on the MEGA65 R6 and R3
 ---------------------------------------------
 
-**V1.1** runs on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and the Browser work,
+**V1.2** runs on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and the Browser work,
 music plays, Next games (Warhawk Next, Nextoid) run with keyboard control, tape (.TAP) games
 load, and a joystick reads correctly as Kempston. The grey screen that V0.2 alpha sometimes
-showed after a reset is fixed (it was an SDRAM read timing problem). New in V1.1: the options
-menu settings are remembered (see "Options menu"). Please report bugs (see below).
+showed after a reset is fixed (it was an SDRAM read timing problem). New in V1.2: an **Amiga mouse** works as the ZX
+Next's Kempston mouse (see "Mouse"; tested on the R6). V1.1 added remembered options menu settings
+(see "Options menu"). Please report bugs (see below).
 
 * **R4 and R5:** the core builds for them, but nobody has tested it on these boards yet. If you
   have one, a test report is very welcome.
