@@ -5,6 +5,7 @@
 #    make sd         sd_image.vhd (SD card image: virtual SD card + physical card access)
 #    make speed      CPU speed changes: ZX Next + sdram_zxn + SDRAM model, test boot ROM
 #    make speed_bram the same with bram_zxn (R3: 1 MB of block RAM)
+#    make mouse      amiga_mouse.vhd (Amiga mouse in a joystick port)
 #    make boot       the ZX Next from reset with an ideal memory (not part of make)
 #    make GHDL=...   use a specific GHDL binary
 #
@@ -19,8 +20,8 @@ SDRAM_SRCS := ../vhdl/sdram_zxn.vhd sdram_model_ram.vhd sdram_model.vhd tb_sdram
 SD_SRCS    := ../ZXNext_MiSTer/rtl/serial/spi_master.vhd $(WORK)/sd_spi_sim.vhd \
               ../vhdl/sd_card_zxn.vhd ../vhdl/sd_image.vhd tb_sd_image.vhd
 
-.PHONY: sim sdram sd speed speed_bram boot clean
-sim: sdram sd speed speed_bram
+.PHONY: sim sdram sd speed speed_bram mouse boot clean
+sim: sdram sd speed speed_bram mouse
 
 sdram:
 	mkdir -p $(WORK)
@@ -28,6 +29,12 @@ sdram:
 	$(GHDL) -a $(STD) --workdir=$(WORK) -P$(WORK) $(SDRAM_SRCS)
 	$(GHDL) -e $(STD) --workdir=$(WORK) -P$(WORK) tb_sdram_zxn
 	$(GHDL) -r $(STD) --workdir=$(WORK) -P$(WORK) tb_sdram_zxn --assert-level=error
+
+mouse:
+	mkdir -p $(WORK)
+	$(GHDL) -a $(STD) --workdir=$(WORK) ../vhdl/amiga_mouse.vhd tb_amiga_mouse.vhd
+	$(GHDL) -e $(STD) --workdir=$(WORK) tb_amiga_mouse
+	$(GHDL) -r $(STD) --workdir=$(WORK) tb_amiga_mouse --assert-level=error
 
 # M2M's sd_controller (sd_spi.vhd) counts byte_counter (integer range 0 to 512) below zero while it
 # waits for a read token. The hardware wraps and never looks at the value there, but GHDL stops

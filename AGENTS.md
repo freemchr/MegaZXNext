@@ -28,7 +28,7 @@ on the task, not on rediscovering the layout.
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
   four top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
-- **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.1 is released**
+- **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.2 is released** (V1.1 + Amiga mouse)
   (R6 and R3 tested; R4/R5 builds included, untested; settings file tested on R6). On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
   work. The V0.2 grey screen after resets was reported gone with the V0.3 build (SDRAM read hold
   timing fix, §3.2). Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
@@ -74,6 +74,7 @@ Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 │   │   ├── sd_image.vhd    the ZX Next's SD card = image file on the MEGA65 card (sector engine)
 │   │   ├── sd_card_zxn.vhd virtual SPI SD card (VHDL translation of MiSTer sys/sd_card.sv)
 │   │   ├── zxn_dc_blocker.vhd  audio DC blocker
+│   │   ├── amiga_mouse.vhd Amiga mouse in a joystick port → Kempston mouse
 │   │   └── zxnext/         replacements for MiSTer files, compiled into library "zxnext":
 │   │       ├── zxnext_top_m65.vhd  derived from rtl/mister/zxnext_top.vhd (MEGA65 top of the ZX Next)
 │   │       ├── bram_xilinx.vhd     replaces rtl/mister/bram.vhd (Altera altsyncram/altdpram → inferred RAM)
@@ -244,7 +245,16 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
 
 - `keyboard.vhd` header has the complete MEGA65 → ZX Next mapping table. Function keys:
   F3 = 50/60 Hz, F9 = Multiface NMI, F11 = DivMMC NMI, F13 = cycle CPU speed. Help = OSM.
-- No PS/2 keyboard or mouse: the membrane matrix is driven directly; mouse inputs are idle.
+- No PS/2 keyboard: the membrane matrix is driven directly.
+- Mouse: an **Amiga mouse** in either joystick port is the Kempston mouse (`amiga_mouse.vhd`,
+  two instances in `main.vhd`, port 1 first). It reads the raw joystick pins (patched board tops,
+  §4), not M2M's debounced lines (1 ms would lose fast movement), with a 1 µs glitch filter.
+  Detected when up and down (or left and right) are low at once, which a joystick cannot do;
+  from then on that port is no Kempston joystick until a ZX Next hard reset (long reset press).
+  Quadrature steps are counted at full resolution; nextreg 0x0A DPI picks the 8 bits the ZX Next
+  sees (default /2), bit 2 swaps the buttons. Left button = fire; right/middle = POT X/Y differing
+  by more than 64 from their value at detection. `make mouse` in `CORE/sim` tests it. Works on
+  the R6 (Amiga mouse in port 1: both axes, left and right button; port 2 and middle untested).
 - RTC: MiSTer's `rtc` (DS1307 over I²C) fed from `main_rtc_i`.
 - Machine ID `0xDA` ("MiSTer": no flash, no bootstrap, no Pi), board issue 0 (`main.vhd`).
 - Power LED green (blue during M2M reset); drive LED yellow = SD activity.
@@ -288,8 +298,9 @@ to **all four** `.xpr`s.
 changed. R4-R6 (a) remove the SDRAM tie-offs, adds the DQ tri-state generate and routes all `sdram_*`
 pins to the CORE; all four (b) route the framework's SD outputs (`sd_reset/clk/mosi`, `sd2_*`) through
 the CORE's `fw_sd*_i` ports, which drives the pins (`sd_*`/`sd2_*` outputs); MISO and card detect
-go from the pins to the framework directly, MISO also to the CORE. Re-apply both when updating M2M. See
-`doc/m2m-v2.1.0-upgrade.md`.
+go from the pins to the framework directly, MISO also to the CORE; and (c) also connect the raw
+joystick pins of both ports to the CORE's `joy_1_pins_n_i`/`joy_2_pins_n_i` (Amiga mouse). Re-apply
+all of them when updating M2M. See `doc/m2m/exceptions.md` and `doc/m2m-v2.1.0-upgrade.md`.
 
 **QNICE:** none.
 
@@ -305,7 +316,7 @@ git submodule update --init                 # CORE/ZXNext_MiSTer and M2M/QNICE
 ( cd CORE/m2m-rom && ./make_rom.sh )
 
 # Simulations (GHDL): SDRAM controller and SD card image
-( cd CORE/sim && make )                     # or: make sdram / sd / speed / speed_bram (R3 RAM); make clean
+( cd CORE/sim && make )                     # or: make sdram / sd / speed / speed_bram (R3 RAM) / mouse; make clean
 
 # Bitstream: open CORE/CORE-R6.xpr (or R4/R5) in Vivado 2026.1 →
 #   Run Synthesis → Run Implementation → Generate Bitstream
@@ -394,11 +405,11 @@ check_timing -verbose -file check_timing.rpt
 
 ## 8. Open items
 
-The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.1 (R6 and R3
+The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.2 (R6 and R3
 tested, R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
 If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt handler saving
 an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test F13,
-NMI keys, .DSK; mouse support; R4/R5 testers; maybe show the MBR partition type in the
+NMI keys, .DSK; R4/R5 testers; maybe show the MBR partition type in the
 "Cannot mount the SD card" error.
 Boot screen: the firmware shows "MiSTer Next" (picked by the machine ID 0xDA, not in our code).
 `tools/bootscreen/zxn_bootscreen.py` patches a user's `TBBLUE.FW` to show the MegaZXNext logo

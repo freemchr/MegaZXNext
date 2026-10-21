@@ -1,3 +1,15 @@
+Version 1.2 - October 2026
+==========================
+
+V1.1 plus Amiga mouse support.
+
+* **Amiga mouse** in either joystick port as the ZX Next's Kempston mouse: detected the first
+  time it moves, speed from the ZX Next's DPI setting (nextreg 0x0A). The core reads the raw
+  joystick pins (the board tops now pass them to the core as well). Tested on the R6 with a mouse
+  in port 1: movement and the left and right buttons work. Port 2 and the middle button are not
+  tested.
+* R3/R3A, R4 and R5 builds included; the mouse has only been tested on the R6.
+
 Version 1.1 - October 2026
 ==========================
 

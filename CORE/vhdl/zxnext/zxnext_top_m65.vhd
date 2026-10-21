@@ -11,7 +11,8 @@
 -- Differences to the MiSTer version:
 --    * No PS/2 keyboard: The membrane matrix (8 rows x 7 columns) is driven
 --      directly by the MEGA65 keyboard (see CORE/vhdl/keyboard.vhd).
---    * No PS/2 mouse: mouse inputs are tied to "idle".
+--    * No PS/2 mouse: the Kempston mouse is fed by main.vhd (Amiga mouse in a
+--      joystick port, amiga_mouse.vhd); the ZX Next's DPI scaling is done there.
 --    * CPU clock: The MiSTer version builds a glitch-free clock multiplexer out
 --      of fabric logic. On Xilinx we use a BUFGMUX_CTRL instead, which does the
 --      glitch-free switch-over in hardware and keeps the clock on the global
@@ -93,6 +94,12 @@ entity zxnext_top_m65 is
       -- Joystick
       joy_left          : in  std_logic_vector(11 downto 0);   -- active high  MODE X Z Y START A C B U D L R
       joy_right         : in  std_logic_vector(11 downto 0);   -- active high  MODE X Z Y START A C B U D L R
+
+      -- Kempston mouse (MEGA65: an Amiga mouse in a joystick port, see main.vhd)
+      mouse_x_i         : in  std_logic_vector(7 downto 0) := (others => '0');
+      mouse_y_i         : in  std_logic_vector(7 downto 0) := (others => '0');
+      mouse_button_i    : in  std_logic_vector(2 downto 0) := (others => '0');   -- M, R, L (1 = pressed)
+      mouse_control_o   : out std_logic_vector(2 downto 0);    -- nextreg 0x0A: button reverse, DPI(1:0)
 
       -- Audio
       audio_L           : out std_logic_vector(11 downto 0);
@@ -425,13 +432,13 @@ begin
       o_JOY_LEFT_TYPE      => zxn_joy_left_type,
       o_JOY_RIGHT_TYPE     => zxn_joy_right_type,
 
-      -- MOUSE (not supported on the MEGA65 port, yet)
+      -- MOUSE (no wheel)
 
-      i_MOUSE_X            => (others => '0'),
-      i_MOUSE_Y            => (others => '0'),
-      i_MOUSE_BUTTON       => (others => '0'),
+      i_MOUSE_X            => mouse_x_i,
+      i_MOUSE_Y            => mouse_y_i,
+      i_MOUSE_BUTTON       => mouse_button_i,
       i_MOUSE_WHEEL        => (others => '0'),
-      o_MOUSE_CONTROL      => open,
+      o_MOUSE_CONTROL      => mouse_control_o,
 
       -- I2C
 
