@@ -14,6 +14,11 @@ the System/Next distribution does not allow systems built from the ZX Next's VHD
 The ZX Next is an enhanced ZX Spectrum: a Z80N CPU at 3.5, 7, 14 or 28 MHz,
 Layer 2 bitmap graphics, tilemap, sprites, copper, DMA, three AY sound chips, DivMMC and
 Multiface, and 2 MB of RAM. It runs NextZXOS and the classic Spectrum 48K, 128K and +3 software.
+On the MEGA65 it uses the MEGA65 keyboard, joysticks in both ports and an **Amiga mouse** as the
+ZX Next's Kempston mouse.
+
+**Download:** the latest build is on the
+[releases page](https://github.com/freemchr/MegaZXNext/releases/latest).
 
 Status: V1.2, tested on the MEGA65 R6 and R3
 ---------------------------------------------
@@ -43,6 +48,7 @@ Requirements
   SD card** (FAT32) in one of the MEGA65's SD card slots. No ROMs or system files are included
   in this core: the ZX Next loads its firmware, ROMs and NextZXOS from that card, just like the
   real machine does.
+* Optional: joysticks, and an **Amiga mouse** (in either joystick port) as the Kempston mouse.
 
 What goes on the SD card
 ------------------------
@@ -215,8 +221,8 @@ Keyboard
 The reset button: a short press is a soft reset (back to the NextZXOS menu), a long press a
 hard reset (reloads the firmware). **Reset ZX Next** in the options menu is a soft reset, too.
 
-Joysticks
----------
+Joysticks and mouse
+-------------------
 
 MEGA65 port 1 is the ZX Next's left joystick, port 2 its right joystick (**Flip joystick ports**
 in the options menu swaps them). What a joystick does is a setting of the ZX Next, not of the
@@ -230,7 +236,9 @@ the joysticks are on the second page) and set **Right Joy** (port 2) or **Left J
 
 An **Amiga mouse** in either joystick port is the ZX Next's **Kempston mouse**. Nothing to set
 up: the core notices the mouse the first time you move it. Left button = left, right button =
-right. Its speed is the ZX Next's own mouse setting (DPI, nextreg 0x0A).
+right. Its speed is the ZX Next's own mouse setting (DPI, nextreg 0x0A). To try it, run
+`/apps/tools/mouse/NXMOUSE.BAS` from the Browser. Software for the Kempston mouse reads it
+through the usual Kempston mouse ports.
 
 Once the core has seen the mouse, that port is a mouse only, not a joystick: if you then plug a
 joystick into it, hold the MEGA65's **reset button** for a moment (ZX Next hard reset) or
@@ -258,7 +266,8 @@ ZX Next in the middle of its own SD card commands.
 Known issues
 ------------
 
-* Tested on R6 and R3. R4/R5 and the R3A are untested. The R3/R3A build has 1 MB
+* Tested on R6 and R3. R4/R5 and the R3A are untested. The mouse is tested on the R6 in port 1
+  only (port 2 and the middle button untested). The R3/R3A build has 1 MB
   of RAM: software that needs 2 MB does not run.
 * "Cannot mount the SD card" with a real ZX Next card that Windows reads fine: the partition type
   is probably `0x07` (exFAT/NTFS) instead of `0x0B`/`0x0C` (FAT32), see the warning in "What goes

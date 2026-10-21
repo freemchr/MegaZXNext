@@ -120,7 +120,7 @@ including SDRAM and SD), 2 unconstrained internal endpoints and 2 unclocked pins
      spread over several writes, which a delay of microseconds does not cover.
 9. **CONF_STR features dropped without a record** (guide S6/S14, l.1055/1106):
    - tape loading;
-   - Kempston mouse;
+   - Kempston mouse (done in V1.2: an Amiga mouse in a joystick port, `amiga_mouse.vhd`);
    - stereo mix;
    - the scandoubler effects, aspect, crop and scale options;
    - the CPU-speed menu entry (`cpu_speed_sw_i => '0'`, `mega65.vhd:418`; F13 works).
