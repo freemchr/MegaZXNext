@@ -42,7 +42,8 @@ memory of an unexpanded ZX Next (NextZXOS reports 768K). `main.vhd`'s generic `G
 (set by `mega65.vhd` from `G_BOARD = "MEGA65_R3"`) chooses. The R3 build meets timing and was
 **reported working on an R3** by a tester (the maintainer has no R3): HDMI/VGA modes, scanlines,
 image and real-card boot (back slot), Reset ZX Next, joysticks, many games; 2 MB software (e.g.
-RogueCraft DX) returns to the NextZXOS menu, as expected. Tested on an R6: an R6 build with
+RogueCraft DX) returns to the NextZXOS menu, as expected. The same tester later reported V1.2 working on an R3A (incl. mouse and F13).
+Tested on an R6: an R6 build with
 `G_RAM_BRAM` forced to true (bram_zxn instead of the SDRAM) boots NextZXOS, `.MEM` shows 768K and
 Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 256 of the 365 RAMB36: the R3 build is at 316.
@@ -254,7 +255,8 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
   Quadrature steps are counted at full resolution; nextreg 0x0A DPI picks the 8 bits the ZX Next
   sees (default /2), bit 2 swaps the buttons. Left button = fire; right/middle = POT X/Y differing
   by more than 64 from their value at detection. `make mouse` in `CORE/sim` tests it. Works on
-  the R6 (Amiga mouse in port 1: both axes, left and right button; port 2 and middle untested).
+  the R6 (Amiga mouse in port 1: both axes, left and right button) and an R3A (MouSTer adapter
+  in Amiga mode, port 1: movement, all three buttons); port 2 untested.
 - RTC: MiSTer's `rtc` (DS1307 over I²C) fed from `main_rtc_i`.
 - Machine ID `0xDA` ("MiSTer": no flash, no bootstrap, no Pi), board issue 0 (`main.vhd`).
 - Power LED green (blue during M2M reset); drive LED yellow = SD activity.
@@ -408,8 +410,9 @@ check_timing -verbose -file check_timing.rpt
 The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.2 (R6 and R3
 tested, R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
 If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt handler saving
-an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). Still to do: test F13,
-NMI keys, .DSK; R4/R5 testers; maybe show the MBR partition type in the
+an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). F13 (CPU speed, nextreg 0x07)
+and F9 (NMI menu) reported working on an R3A; F11 (DivMMC NMI) only acts if nextreg 0x06 bit 4 is
+set (esxDOS use), untested. Still to do: F11, .DSK, mouse in port 2; R4/R5 testers; maybe show the MBR partition type in the
 "Cannot mount the SD card" error.
 Boot screen: the firmware shows "MiSTer Next" (picked by the machine ID 0xDA, not in our code).
 `tools/bootscreen/zxn_bootscreen.py` patches a user's `TBBLUE.FW` to show the MegaZXNext logo

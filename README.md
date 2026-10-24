@@ -38,12 +38,13 @@ Next's Kempston mouse (see "Mouse"; tested on the R6). V1.1 added remembered opt
   scanlines, booting from an image or from a real ZX Next SD card, Reset ZX Next, joysticks and
   many games. Software that needs 2 MB does not run (for example RogueCraft DX: you end up
   back in the NextZXOS menu). Since V1.1 the R3 build is part of the normal release
-  (`megazxnext_r3.cor`). Not yet tested on an R3A.
+  (`megazxnext_r3.cor`). The same tester has since run V1.2 on an R3A: it works there too,
+  including the Amiga mouse and F13 (CPU speed).
 
 Requirements
 ------------
 
-* A MEGA65 R6 or R3 (R4/R5 untested; R3A untested; R3/R3A: 1 MB, see above).
+* A MEGA65 R6, R3 or R3A (R4/R5 untested; R3/R3A: 1 MB, see above).
 * Either an **image of a ZX Next SD card** on the MEGA65's SD card (FAT32), or a **real ZX Next
   SD card** (FAT32) in one of the MEGA65's SD card slots. No ROMs or system files are included
   in this core: the ZX Next loads its firmware, ROMs and NextZXOS from that card, just like the
@@ -244,8 +245,9 @@ Once the core has seen the mouse, that port is a mouse only, not a joystick: if 
 joystick into it, hold the MEGA65's **reset button** for a moment (ZX Next hard reset) or
 restart the core. Use the other port for a joystick. Commodore 1351 mice are not supported.
 
-Tested on an R6 with an Amiga mouse in port 1 (movement, left and right button). Port 2 and the
-middle button are not tested yet.
+Tested with an Amiga mouse in port 1: on an R6 (movement, left and right button) and on an R3A
+(MouSTer adapter in Amiga mouse mode: movement and all three buttons). Port 2 is not tested
+yet.
 
 Options menu
 ------------
@@ -266,8 +268,8 @@ ZX Next in the middle of its own SD card commands.
 Known issues
 ------------
 
-* Tested on R6 and R3. R4/R5 and the R3A are untested. The mouse is tested on the R6 in port 1
-  only (port 2 and the middle button untested). The R3/R3A build has 1 MB
+* Tested on R6, R3 and R3A. R4/R5 are untested. The mouse is tested in port 1 only (port 2
+  untested). The R3/R3A build has 1 MB
   of RAM: software that needs 2 MB does not run.
 * "Cannot mount the SD card" with a real ZX Next card that Windows reads fine: the partition type
   is probably `0x07` (exFAT/NTFS) instead of `0x0B`/`0x0C` (FAT32), see the warning in "What goes
@@ -276,7 +278,10 @@ Known issues
   so it probably had the same cause.
 * The options menu settings are only remembered with an image and a `/zxnext/zxncfg` file (see
   "Options menu"), not with a real ZX Next SD card. Tested on the R6.
-* Not tested yet: F13, the NMI keys (F9/F11).
+* F13 changes the CPU speed (nextreg 0x07 goes 3.5 → 7 → 14 → 28 MHz, tested on an R3A), but
+  nothing on screen shows it: as on a real ZX Next (F8), the NextZXOS menu shows its own speed
+  setting, not the current speed. F9 opens the NMI menu. F11 (DivMMC NMI) does nothing unless the
+  drive button NMI is enabled (nextreg 0x06 bit 4); not tested with it enabled yet.
 * Real ZX Next SD cards must be FAT32 (MBR partition type `0x0B`/`0x0C`); FAT16 and exFAT cards
   are not supported.
 * The boot screen of the ZX Next firmware says "MiSTer Next" (the firmware chooses it by the
