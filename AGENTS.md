@@ -27,7 +27,7 @@ on the task, not on rediscovering the layout.
   by Alvin Albrecht, Fabio Belavenuto, Victor Trucco et al.; MiSTer port by Sorgelig.
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
-  four top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
+  files listed in §4: board tops, OSM palette, colour escape), QNICE submodule at `2eb27dd` (V2.0.1's pin).
 - **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.2 is released** (V1.1 + Amiga mouse)
   (R6 and R3 tested; R4/R5 builds included, untested; settings file tested on R6). On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
   work. The V0.2 grey screen after resets was reported gone with the V0.3 build (SDRAM read hold
@@ -59,7 +59,7 @@ Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 ├── AUTHORS                 credits for everything the core uses
 ├── VERSIONS.md             this core's changelog (M2M's own is upstream)
 ├── M2M/                    the MiSTer2MEGA65 framework, V2.0.1. Read-only EXCEPT the
-│                           four board tops listed in §4. M2M/QNICE = QNICE submodule.
+│                           files listed in §4 (board tops, OSM colours). M2M/QNICE = QNICE submodule.
 ├── CORE/
 │   ├── ZXNext_MiSTer/      ← submodule, UNMODIFIED. All RTL is compiled from here (library "zxnext")
 │   │                         except the files that CORE/vhdl/zxnext/ replaces.
@@ -86,7 +86,9 @@ Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 │   ├── CORE.xdc            core clocks, CPU BUFGMUX clocks, multicycles, SD pins (all boards)
 │   ├── CORE-SDRAM.xdc      SDRAM multicycles, IOB packing, I/O timing (R4/R5/R6 .xpr only)
 │   └── CORE-R{3,4,5,6}.xpr Vivado 2026.1 projects (same sources, different top/XDC/G_BOARD)
+├── CORE/font/MegaZXNext-16x16.rom  OSD font: M2M font + the badge characters (tools/osd_logo.py)
 ├── release/zxnext/zxncfg   empty settings file (31 × 0xFF) for /zxnext/zxncfg on the SD card
+├── tools/osd_logo.py       badge on the OSD welcome screen: font characters + SCR_LOGO in config.vhd
 ├── tools/bootscreen/       patches TBBLUE.FW: MegaZXNext logo instead of "MiSTer Next" (Python)
 └── doc/
     ├── m2m/                M2M conventions; exceptions.md = how to re-apply our changes on updates
@@ -301,7 +303,10 @@ changed. R4-R6 (a) remove the SDRAM tie-offs, adds the DQ tri-state generate and
 pins to the CORE; all four (b) route the framework's SD outputs (`sd_reset/clk/mosi`, `sd2_*`) through
 the CORE's `fw_sd*_i` ports, which drives the pins (`sd_*`/`sd2_*` outputs); MISO and card detect
 go from the pins to the framework directly, MISO also to the CORE; and (c) also connect the raw
-joystick pins of both ports to the CORE's `joy_1_pins_n_i`/`joy_2_pins_n_i` (Amiga mouse). Re-apply
+joystick pins of both ports to the CORE's `joy_1_pins_n_i`/`joy_2_pins_n_i` (Amiga mouse). Also changed
+(V1.3, from MegaST): the OSM palette comes from `OSM_PALETTE` in `globals.vhd` (generic `G_OSM_PALETTE`
+through `framework.vhd` → `av_pipeline` → `analog/digital_pipeline` → `video_overlay` → `vga_osm.vhd`), and
+`M2M/rom/screen.asm` `SCR$PRINTSTR` takes ESC + attribute byte (colours on the welcome screen). Re-apply
 all of them when updating M2M. See `doc/m2m/exceptions.md` and `doc/m2m-v2.1.0-upgrade.md`.
 
 **QNICE:** none.

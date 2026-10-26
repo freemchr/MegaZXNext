@@ -109,10 +109,31 @@ When you update M2M, re-apply 1, 2 and 4 to the new board tops (a three-way merg
 of the old stock file, the new stock file and our file works).
 `doc/m2m-v2.1.0-upgrade.md` describes the update to V2.1.0.
 
+**OSM colours and the welcome screen badge** (the same change as in MegaST, marked
+`MegaZXNext` in the files):
+
+5. `M2M/vhdl/av_pipeline/vga_osm.vhd`: the 16 colours of the attribute bits
+   {dark, R, G, B} come from the generic `G_OSM_PALETTE` (24 bits per colour,
+   colour i in bits 24*i+23..24*i) instead of being computed (R, G, B at FF, 7F
+   when dark). The default is that M2M palette.
+6. `video_overlay.vhd`, `analog_pipeline.vhd`, `digital_pipeline.vhd`,
+   `av_pipeline.vhd`, `framework.vhd`: pass the generic on; `framework.vhd`
+   takes `OSM_PALETTE` from `globals.vhd` (a ZX Spectrum look: black ink on
+   white paper, blue headlines, the badge colours in the dark half).
+7. `M2M/rom/screen.asm`, `SCR$PRINTSTR`: ESC (0x1B) followed by an attribute
+   byte sets the attribute of the following characters (written into the
+   attribute VRAM at the same address). Without ESC nothing changes. Used by the
+   welcome screen (`SCR_LOGO` and the headlines in `config.vhd`).
+
+The badge itself is core side: `CORE/font/MegaZXNext-16x16.rom` is the M2M font
+with 138 badge characters in codes the core does not print (`FONT_FILE` in
+`globals.vhd`), written by `tools/osd_logo.py` together with `SCR_LOGO`. When you
+update M2M, re-apply 5 to 7 (all generic, candidates for upstream).
+
 QNICE
 -----
 
-No changes to QNICE or to `M2M/rom`. The core specific Shell code is in
+No changes to QNICE. `M2M/rom/screen.asm`: the colour escape (7 above). The core specific Shell code is in
 `CORE/m2m-rom/m2m-rom.asm`: `PREP_START` mounts the ZX Next's SD card image
 (`ZXN_MOUNT`), and the heap is 64 words smaller than in the template to make
 room for its variables.

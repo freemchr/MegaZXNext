@@ -62,9 +62,34 @@ constant VGA_DX               : natural := 720;
 constant VGA_DY               : natural := 576;
 
 --    FONT_*  size of one OSM character
-constant FONT_FILE            : string  := "../font/Anikki-16x16-m2m.rom";
+--    MegaZXNext: the M2M font with the MegaZXNext logo in codes the core does not print otherwise
+--    (tools/osd_logo.py), the path like QNICE_FIRMWARE_M2M
+constant FONT_FILE            : string  := "../../../CORE/font/MegaZXNext-16x16.rom";
 constant FONT_DX              : natural := 16;
 constant FONT_DY              : natural := 16;
+
+--    MegaZXNext: OSM_PALETTE  the 16 OSM colours (vga_osm.vhd): colour i = attribute bits {dark, R, G, B} in bits
+--    24*i+23..24*i. The M2M firmware draws text in colour 3 on colour 1 (M2M$SA_COL_STD), headlines in colour 6,
+--    selections inverse: here a ZX Spectrum look (black ink on white paper, Spectrum blue headlines, black
+--    selection bar). The dark half (8..15) holds the logo colours (tools/osd_logo.py), colour 0 the logo's grey
+--    on the white background.
+constant OSM_PALETTE          : std_logic_vector(16*24-1 downto 0) :=
+   x"FFFFFF" &    -- 15
+   x"000000" &    -- 14
+   x"DF4301" &    -- 13 logo: orange
+   x"F7F62A" &    -- 12 logo: yellow
+   x"14DF33" &    -- 11 logo: green
+   x"2661FD" &    -- 10 logo: blue
+   x"FAFAFA" &    --  9 logo: white
+   x"343434" &    --  8 logo: badge grey
+   x"FFFFFF" &    --  7
+   x"0000D7" &    --  6 headlines: Spectrum blue
+   x"0000D7" &    --  5 Spectrum blue
+   x"D70000" &    --  4 Spectrum red
+   x"000000" &    --  3 text: black ink
+   x"808080" &    --  2 grey
+   x"FFFFFF" &    --  1 background: white paper
+   x"343434";     --  0 logo: badge grey on the background
 
 -- Constants for the OSM screen memory
 constant CHARS_DX             : natural := VGA_DX / FONT_DX;
