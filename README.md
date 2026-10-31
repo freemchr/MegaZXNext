@@ -1,6 +1,7 @@
 <p align="center"><img src="doc/assets/megazxnext-badge.png" alt="MegaZXNext" width="700"></p>
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-cjf077-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/cjf077)
+[![Get release alerts in Discord](https://img.shields.io/badge/Discord-Get_release_alerts-5865F2?logo=discord&logoColor=white)](https://sourceping.app/github/freemchr/MegaZXNext)
 
 A ZX Next core for the [MEGA65](https://mega65.org/): a port of the open source
 [ZX Spectrum Next](https://www.specnext.com/) FPGA core, based on the MiSTer core
