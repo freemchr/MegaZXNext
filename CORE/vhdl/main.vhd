@@ -517,8 +517,8 @@ begin
    mouse_count_y <= mouse1_count_y when mouse1_active = '1' else mouse2_count_y;
    mouse_buttons <= mouse1_buttons when mouse1_active = '1' else mouse2_buttons;
 
-   -- nextreg 0x0A: DPI (1:0) divides the movement by 1, 2, 4 or 8 (default 2), bit 2 swaps the
-   -- left and right button (as on MiSTer).
+   -- nextreg 0x0A: DPI (1:0) divides the movement by 1, 2, 4 or 8 (default 2), bit 3 swaps the
+   -- left and right button (as on MiSTer; zxnext.vhd hands it on as mouse_control(2)).
    mouse_proc : process (clk_main_i)
       variable shift : natural range 0 to 3;
    begin

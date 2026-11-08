@@ -151,6 +151,12 @@ FAT32 card with the distribution unzipped onto it), then copy the whole card int
 (e.g. `dd` on Linux/macOS, Win32 Disk Imager on Windows). Tested: System/Next 24.11 in a
 2 GB image.
 
+**System/Next 26.11:** its new firmware (`TBBLUE.FW` 1.46) needs a newer ZX Next core than this
+one (3.02.00): after you choose a personality, the machine resets back to the firmware screen.
+Use the firmware of 24.11 instead: copy `TBBLUE.FW` and `TBBLUE.TBU` from `sn-complete-24.11.zip`
+over the ones of 26.11 in the root of the image. Tested on the R6: NextZXOS 2.10 boots, Next
+games run (Santa's Pressie, Warhawk).
+
 ### MegaZXNext boot screen (optional)
 
 The ZX Next firmware picks its boot screen by the machine ID, and this core reports the MiSTer
@@ -288,6 +294,8 @@ Known issues
   machine ID the core reports). `tools/bootscreen` changes it to the MegaZXNext logo (see "What
   goes on the SD card").
 * +3 disk images (.DSK) have not been tested yet.
+* System/Next 26.11: firmware 1.46 resets after the personality menu. Use the 24.11 firmware
+  (see "What goes on the SD card"). Supporting 1.46 needs a core update.
 
 Reporting issues
 ----------------

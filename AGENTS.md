@@ -255,8 +255,8 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
   Detected when up and down (or left and right) are low at once, which a joystick cannot do;
   from then on that port is no Kempston joystick until a ZX Next hard reset (long reset press).
   Quadrature steps are counted at full resolution; nextreg 0x0A DPI picks the 8 bits the ZX Next
-  sees (default /2), bit 2 swaps the buttons. Left button = fire; right/middle = POT X/Y differing
-  by more than 64 from their value at detection. `make mouse` in `CORE/sim` tests it. Works on
+  sees (default /2), bit 3 swaps the buttons. Left button = fire; right/middle = POT X/Y differing
+  by more than 64 from their value at detection. `make mouse` in `CORE/sim` tests it; `make mouse_reg` checks that nextreg 0x0A bit 3 (not 2) reaches `main.vhd` as the swap. Works on
   the R6 (Amiga mouse in port 1: both axes, left and right button) and an R3A (MouSTer adapter
   in Amiga mode, port 1: movement, all three buttons); port 2 untested.
 - RTC: MiSTer's `rtc` (DS1307 over I²C) fed from `main_rtc_i`.
@@ -323,7 +323,7 @@ git submodule update --init                 # CORE/ZXNext_MiSTer and M2M/QNICE
 ( cd CORE/m2m-rom && ./make_rom.sh )
 
 # Simulations (GHDL): SDRAM controller and SD card image
-( cd CORE/sim && make )                     # or: make sdram / sd / speed / speed_bram (R3 RAM) / mouse; make clean
+( cd CORE/sim && make )                     # or: make sdram / sd / speed / speed_bram (R3 RAM) / mouse / mouse_reg; make clean
 
 # Bitstream: open CORE/CORE-R6.xpr (or R4/R5) in Vivado 2026.1 →
 #   Run Synthesis → Run Implementation → Generate Bitstream
