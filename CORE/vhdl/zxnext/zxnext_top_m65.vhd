@@ -226,8 +226,9 @@ begin
 
    -- CPU clock generation for 3.5 MHz (incl. contention), 7 MHz and 14 MHz.
    -- As in MiSTer, CLK_i0 is a register driven clock. Unlike MiSTer, CLK_i0 may not rise for 15
-   -- CLK_28 cycles after a speed change (cpu_settle). The ZX Next sizes a memory cycle by its new
-   -- speed at once (memcycle_count_max: the request goes out 7 CLK_28 cycles after MREQ at 3.5 MHz),
+   -- CLK_28 cycles after a speed change (cpu_settle). Core 3.02.00 sized a memory cycle by its new
+   -- speed at once (memcycle_count_max: the request went out 7 CLK_28 cycles after MREQ at 3.5 MHz;
+   -- since 3.02.02 the request goes out at MREQ, but the SDRAM still needs its time),
    -- but the cycle that straddles the switch began at the old speed: from 28 MHz, T1 and T2 run at
    -- 28 MHz and T3 comes with the first CLK_i0 edge, which can be only a few cycles later. The CPU
    -- then takes the opcode before it was requested from memory. On R6 NextZXOS lost the INC HL after
