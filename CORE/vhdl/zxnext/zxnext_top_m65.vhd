@@ -46,7 +46,7 @@ entity zxnext_top_m65 is
    generic (
       g_video_def       : unsigned(2 downto 0)  := "000";
       g_version         : unsigned(7 downto 0)  := X"32";
-      g_sub_version     : unsigned(7 downto 0)  := X"05";
+      g_sub_version     : unsigned(7 downto 0)  := X"04";
       g_video_inc       : unsigned(1 downto 0)  := "10"
    );
    port (

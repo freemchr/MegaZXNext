@@ -2,8 +2,8 @@
 -- MegaZXNext: ZX Next core for the MEGA65
 --
 -- Replaces rtl/zxnext.vhd of ZXNext_MiSTer: the MiSTer version (upstream ZX Next
--- 60e8343 + MiSTer changes) merged with upstream ZX Next core 3.02.05
--- (gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA, branch 30205, 15e206dd).
+-- 60e8343 + MiSTer changes) merged with upstream ZX Next core 3.02.04
+-- (gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA, branch 30204, dc8d764, core 3.02.04).
 -- Changes marked "MegaZXNext". See AGENTS.md section 4.
 --
 -- MEGA65 port done by Chris Freeman in 2026 and licensed under GPL v3
@@ -302,8 +302,6 @@ architecture rtl of zxnext is
    -- MegaZXNext: upstream selects board-specific logic with generates on g_board_issue, which is a
    -- port here (MiSTer); the MEGA65 build takes the Issue 2-4 logic (2 MB, no +3 FDC pins, no XADC)
    constant C_BOARD_ISSUE        : unsigned(3 downto 0) := X"0";
-   -- MegaZXNext: upstream builds a reduced anti-brick core for machine id 0xFA (a generic there, a port here)
-   constant C_ANTI_BRICK         : boolean := false;
 
    -- RESET
    
@@ -1911,26 +1909,6 @@ end generate;
 -- MegaZXNext: the t80n variants of g_option(1:0) = "01", "10", "11" (memptr/xy flags, pi debug
 -- interface) are not built; MiSTer's own t80n is used (gen_cpu_00, unchanged t80n_pack)
 
-gen_dma_ab: if (C_ANTI_BRICK) generate
-
-   dma_busrq_n <= '1';
-
-   dma_a <= (others => '0');
-   dma_do <= (others => '0');
-   dma_rd_n <= '1';
-   dma_wr_n <= '1';
-   dma_mreq_n <= '1';
-   dma_iorq_n <= '1';
-
-   port_dma_dat_0 <= (others => '0');
-   port_dma_dat <= port_dma_dat_0;
-
-   dma_mode <= '0';
-
-end generate;
-
-gen_dma: if (not C_ANTI_BRICK) generate
-
    dma_mod: entity work.z80dma
    port map (
       reset_i        => reset,
@@ -1979,8 +1957,6 @@ gen_dma: if (not C_ANTI_BRICK) generate
          end if;
       end if;
    end process;
-
-end generate;
 
    -- cpu bus arbiter
    -- no dma controller on the expansion bus at this time
@@ -4518,21 +4494,7 @@ end generate;
          end if;
       end if;
    end process;
-
-gen_divmmc_ab: if (C_ANTI_BRICK) generate
-
-   divmmc_rom_en <= '0';
-   divmmc_ram_en <= '0';
-   divmmc_rdonly <= '0';
-   divmmc_bank <= (others => '0');
-      
-   divmmc_nmi_hold <= '0';
-   divmmc_automap_held <= '0';
-
-end generate;
-
-gen_divmmc: if (not C_ANTI_BRICK) generate
-
+   
    divmmc_mod: entity work.divmmc
    port map
    (
@@ -4568,8 +4530,6 @@ gen_divmmc: if (not C_ANTI_BRICK) generate
       o_disable_nmi        => divmmc_nmi_hold,
       o_automap_held       => divmmc_automap_held
    );
-
-end generate;
    
    process (i_CLK_28)
    begin
@@ -4675,20 +4635,6 @@ end generate;
    -- MULTIFACE
    --
 
-gen_multiface_ab: if (C_ANTI_BRICK) generate
-
-   mf_nmi_hold <= '0';
-   mf_mem_en <= '0';
-   mf_port_en <= '0';
-   
-   mf_is_active <= '0';
-   
-   mf_port_dat <= port_7ffd_reg(3) & "1111111";
-
-end generate;
-
-gen_multiface: if (not C_ANTI_BRICK) generate
-
    multiface_mod: entity work.multiface
    port map
    (
@@ -4735,9 +4681,7 @@ gen_multiface: if (not C_ANTI_BRICK) generate
          end if;
       end if;
    end process;
-
-end generate;
-
+   
    --
    -- SPRITES
    --

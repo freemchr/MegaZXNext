@@ -32,29 +32,28 @@ When you update the submodule:
    the file lists of **all four** `CORE/CORE-R*.xpr` (library `zxnext`).
 3. Update the commit in this file and in `AGENTS.md` §1.
 
-Official ZX Next core ZX_Spectrum_Next_FPGA (core 3.02.05)
+Official ZX Next core ZX_Spectrum_Next_FPGA (core 3.02.04)
 ----------------------------------------------------------
 
 The submodule `CORE/ZX_Spectrum_Next_FPGA` points to
-https://gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA (branch `30205`, commit `15e206dd`) and is
+https://gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA (branch `30204`, commit `dc8d764`, "CORE VERSION 3.02.04") and is
 **not modified**. It brings the core from the MiSTer version (upstream `60e8343`, Sept 2023,
-plus MiSTer changes) to 3.02.05:
+plus MiSTer changes) to 3.02.04:
 
 * `rtl/zxnext.vhd` is replaced by `CORE/vhdl/zxnext/zxnext.vhd`: a three-way merge
-  (`git merge-file`, base = upstream `60e8343`, ours = MiSTer, theirs = `30205`). The seven
+  (`git merge-file`, base = upstream `60e8343`, ours = MiSTer, theirs = `dc8d764`, 3.02.04). The seven
   conflicts were resolved as follows: `g_option` added as a generic (default 0) while
   `g_board_issue` stays a MiSTer port; CPU option generates from upstream but only `gen_cpu_00`
   kept (MiSTer t80n); memory cycle from upstream (requests at MREQ, the `memcycle_count` delay
   is gone; MiSTer `i_RAM_A_REQ_ALLOW` unused); nextreg 0x10 MiSTer (inline); TZX hotkeys from
-  upstream (off); csync and XADC/XDNA MiSTer (removed). Upstream's `g_board_issue` and
-  `g_machine_id = X"FA"` generates use the constants `C_BOARD_ISSUE` (0) and `C_ANTI_BRICK`
-  (false); nextreg 0x04 is cleared on a boot reset as in MiSTer. Every change carries
+  upstream (off); csync and XADC/XDNA MiSTer (removed). Upstream's `g_board_issue`
+  generates use the constant `C_BOARD_ISSUE` (0); nextreg 0x04 is cleared on a boot reset as in MiSTer. Every change carries
   "MegaZXNext".
 * `bootrom`, `ctc`, `ctc_chan`, `sprites` (unchanged by MiSTer) and the new `arbiter_dma`,
   `spi_slave`, `pi_debug_control_param` are compiled from this submodule.
 * `spi_master` and the `t80n*` CPU files stay MiSTer's.
 
-To move to a newer upstream: repeat the merge with base = `15e206dd` and theirs = the new
+To move to a newer upstream: repeat the merge with base = `dc8d764` and theirs = the new
 commit, `git merge-file CORE/vhdl/zxnext/zxnext.vhd <base> <theirs>`; then the other files
 as above. Upstream's own top (`zxnext_top_issue*.vhd`) shows which ports are new.
 

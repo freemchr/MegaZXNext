@@ -21,13 +21,13 @@ on the task, not on rediscovering the layout.
   Layer 2 / tilemap / sprites, AY×3, DivMMC, Multiface, 2 MB RAM). It boots its firmware
   (`TBBLUE.FW`, `TBBLUE.TBU`), ROMs and NextZXOS **from its own SD card**, which on the MEGA65
   (as on MiSTer) is an **image file**: `/zxnext/boot.vhd` or `/zxnext/boot.img` on the MEGA65's
-  SD card. Core version **3.02.05** (branch `core-3.02.05`, not released; `master`: 3.02.00, which
+  SD card. Core version **3.02.04** (branch `core-3.02.05`, not released; `master`: 3.02.00, which
   matches System/Next 24.11). System/Next 26.11 ships core 3.03.00, whose source is not public.
 - **MiSTer core:** [MiSTer-devel/ZXNext_MISTer](https://github.com/MiSTer-devel/ZXNext_MISTer),
   pinned as the git submodule `CORE/ZXNext_MiSTer` (commit `7daebd1`). Original ZX Next RTL
   by Alvin Albrecht, Fabio Belavenuto, Victor Trucco et al.; MiSTer port by Sorgelig.
 - **Official ZX Next core:** [SpectrumNext/ZX_Spectrum_Next_FPGA](https://gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA),
-  submodule `CORE/ZX_Spectrum_Next_FPGA` (branch `30205`, commit `15e206dd`, core 3.02.05). The MiSTer
+  submodule `CORE/ZX_Spectrum_Next_FPGA` (branch `30204`, commit `dc8d764`, "CORE VERSION 3.02.04"). The MiSTer
   RTL is upstream `60e8343` (Sept 2023) plus MiSTer changes; `CORE/vhdl/zxnext/zxnext.vhd` is the
   three-way merge of the two (§4).
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
@@ -297,9 +297,9 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
 | `rtl/cpu/t80n.vhd` | `CORE/vhdl/zxnext/t80n.vhd` | 9-bit vs 4-bit mask length mismatch (`x"7"` → `"000000111"`) |
 | `rtl/mister/sdram.sv` | `CORE/vhdl/sdram_zxn.vhd` | VHDL translation for the MEGA65 SDRAM at 112 MHz (see §3.2) |
 | `sys/sd_card.sv` | `CORE/vhdl/sd_card_zxn.vhd` | VHDL translation (SDHC, 8-bit buffer, `zxnext.dpram`), plus `idle_o` for the CPU wait (see §3.3) |
-| `rtl/zxnext.vhd` | `CORE/vhdl/zxnext/zxnext.vhd` | Core 3.02.05: MiSTer's version three-way merged with upstream (base `60e8343`, theirs `30205`). Board-issue and anti-brick generates use constants (`C_BOARD_ISSUE` = 0: Issue 2-4 logic, 2 MB; `C_ANTI_BRICK` = false); only the plain t80n (`g_option` = 0: no Pi debug, port C, TZX hotkeys); nextreg 0x04 keeps MiSTer's boot reset; csync removed (gone upstream) |
-| `rtl/rom/bootrom.vhd`, `rtl/device/ctc.vhd`, `ctc_chan.vhd`, `rtl/video/sprites.vhd` | same files in `CORE/ZX_Spectrum_Next_FPGA` | Upstream 3.02.05 versions (MiSTer had not changed them) |
-| (new in 3.02.05) | `arbiter_dma.vhd`, `spi_slave.vhd`, `pi_debug_control_param.vhd` from `CORE/ZX_Spectrum_Next_FPGA` | Only instantiated in disabled generates, but needed for analysis |
+| `rtl/zxnext.vhd` | `CORE/vhdl/zxnext/zxnext.vhd` | Core 3.02.04: MiSTer's version three-way merged with upstream (base `60e8343`, theirs `dc8d764` = 3.02.04). Board-issue generates use the constant `C_BOARD_ISSUE` = 0 (Issue 2-4 logic, 2 MB); only the plain t80n (`g_option` = 0: no Pi debug, port C, TZX hotkeys); nextreg 0x04 keeps MiSTer's boot reset; csync removed (gone upstream) |
+| `rtl/rom/bootrom.vhd`, `rtl/device/ctc.vhd`, `ctc_chan.vhd`, `rtl/video/sprites.vhd` | same files in `CORE/ZX_Spectrum_Next_FPGA` | Upstream 3.02.04 versions (MiSTer had not changed them) |
+| (new since 3.02.01) | `arbiter_dma.vhd`, `spi_slave.vhd`, `pi_debug_control_param.vhd` from `CORE/ZX_Spectrum_Next_FPGA` | Only instantiated in disabled generates, but needed for analysis |
 
 `spi_master.vhd` and the CPU (`t80n*`) stay MiSTer's: MiSTer uses Mike Stirling's SPI master and
 Sorgelig's t80n with MEMPTR; upstream's changes to them are not applied.
