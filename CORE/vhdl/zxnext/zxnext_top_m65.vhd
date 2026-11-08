@@ -46,7 +46,7 @@ entity zxnext_top_m65 is
    generic (
       g_video_def       : unsigned(2 downto 0)  := "000";
       g_version         : unsigned(7 downto 0)  := X"32";
-      g_sub_version     : unsigned(7 downto 0)  := X"00";
+      g_sub_version     : unsigned(7 downto 0)  := X"05";
       g_video_inc       : unsigned(1 downto 0)  := "10"
    );
    port (
@@ -409,6 +409,7 @@ begin
 
       i_SPKEY_FUNCTION     => zxn_spkey_function,
       i_SPKEY_BUTTONS      => zxn_spkey_buttons,
+      i_SPKEY_FUNCTION_EXT => (others => '0'),   -- TZX hotkeys (need the Pi, not built)
 
       -- MEMBRANE KEYBOARD
 
@@ -491,6 +492,8 @@ begin
       o_RAM_B_ADDR         => RAM_B_ADDR,
       o_RAM_B_REQ_T        => RAM_B_REQ,
       i_RAM_B_DI           => RAM_B_DI,
+      i_RAM_C_DI           => (others => '0'),   -- port C (Pi debug) not built (g_option(13) = 0)
+      i_RAM_C_ACK          => '0',
 
       -- EXPANSION BUS
 

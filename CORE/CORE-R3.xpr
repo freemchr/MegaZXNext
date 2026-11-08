@@ -332,14 +332,14 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/ctc_chan.vhd">
+      <File Path="$PPRDIR/ZX_Spectrum_Next_FPGA/cores/zxnext/src/device/ctc_chan.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="Library" Val="zxnext"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/device/ctc.vhd">
+      <File Path="$PPRDIR/ZX_Spectrum_Next_FPGA/cores/zxnext/src/device/ctc.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="Library" Val="zxnext"/>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -388,7 +388,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/video/sprites.vhd">
+      <File Path="$PPRDIR/ZX_Spectrum_Next_FPGA/cores/zxnext/src/video/sprites.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="Library" Val="zxnext"/>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -444,14 +444,35 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/rom/bootrom.vhd">
+      <File Path="$PPRDIR/ZX_Spectrum_Next_FPGA/cores/zxnext/src/rom/bootrom.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="Library" Val="zxnext"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/ZXNext_MiSTer/rtl/zxnext.vhd">
+      <File Path="$PPRDIR/vhdl/zxnext/zxnext.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZX_Spectrum_Next_FPGA/cores/zxnext/src/device/arbiter_dma.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZX_Spectrum_Next_FPGA/cores/zxnext/src/serial/spi_slave.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="Library" Val="zxnext"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/ZX_Spectrum_Next_FPGA/cores/zxnext/src/device/pi_debug_control/pi_debug_control_param.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="Library" Val="zxnext"/>
           <Attr Name="UsedIn" Val="synthesis"/>
