@@ -425,8 +425,8 @@ check_timing -verbose -file check_timing.rpt
 
 ## 8. Open items
 
-The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.2 (R6 and R3
-tested, R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
+The audit against the Porting Guide is recorded in `doc/porting-guide-audit.md`. V1.3 (core 3.02.04; R6
+tested with a test build, R3/R4/R5 untested) is released. Known issues are listed in `README.md` and `VERSIONS.md`.
 If the grey screen comes back: CPU trace probe triggered by the DivMMC interrupt handler saving
 an SP of 0x26xx to 0x25B8 (i.e. re-entering itself). F13 (CPU speed, nextreg 0x07)
 and F9 (NMI menu) reported working on an R3A; F11 (DivMMC NMI) only acts if nextreg 0x06 bit 4 is
