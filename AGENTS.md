@@ -21,8 +21,8 @@ on the task, not on rediscovering the layout.
   Layer 2 / tilemap / sprites, AY×3, DivMMC, Multiface, 2 MB RAM). It boots its firmware
   (`TBBLUE.FW`, `TBBLUE.TBU`), ROMs and NextZXOS **from its own SD card**, which on the MEGA65
   (as on MiSTer) is an **image file**: `/zxnext/boot.vhd` or `/zxnext/boot.img` on the MEGA65's
-  SD card. Core version **3.02.04** (branch `core-3.02.05`, not released; `master`: 3.02.00, which
-  matches System/Next 24.11). System/Next 26.11 ships core 3.03.00, whose source is not public.
+  SD card. Core version **3.02.04** (since V1.3; V1.2 and older: 3.02.00, which
+  matches System/Next 24.11). 3.02.04 boots 26.11 (FW 1.46) and 24.11 on the R6. System/Next 26.11 ships core 3.03.00, whose source is not public.
 - **MiSTer core:** [MiSTer-devel/ZXNext_MISTer](https://github.com/MiSTer-devel/ZXNext_MISTer),
   pinned as the git submodule `CORE/ZXNext_MiSTer` (commit `7daebd1`). Original ZX Next RTL
   by Alvin Albrecht, Fabio Belavenuto, Victor Trucco et al.; MiSTer port by Sorgelig.

@@ -20,8 +20,12 @@ ZX Next's Kempston mouse.
 **Download:** the latest build is on the
 [releases page](https://github.com/freemchr/MegaZXNext/releases/latest).
 
-Status: V1.2, tested on the MEGA65 R6 and R3
----------------------------------------------
+Status: V1.3, tested on the MEGA65 R6
+-------------------------------------
+
+**V1.3** updates the ZX Next core to version 3.02.04, so **System/Next 26.11** (firmware 1.46)
+now boots without the firmware swap. Tested on the R6 with 26.11 and with 24.11. The options
+menu has ZX Spectrum colours.
 
 **V1.2** runs on a MEGA65 **R6**: NextZXOS boots, its menus, 48K BASIC and the Browser work,
 music plays, Next games (Warhawk Next, Nextoid) run with keyboard control, tape (.TAP) games
@@ -148,14 +152,13 @@ releases contain only the FPGA core. Get the files from their official sources:
 
 To make an image with the current distribution, prepare a ZX Next SD card the official way (a
 FAT32 card with the distribution unzipped onto it), then copy the whole card into an image file
-(e.g. `dd` on Linux/macOS, Win32 Disk Imager on Windows). Tested: System/Next 24.11 in a
-2 GB image.
+(e.g. `dd` on Linux/macOS, Win32 Disk Imager on Windows). Tested on the R6: System/Next 26.11
+(512 MB image) and 24.11 (2 GB image).
 
-**System/Next 26.11:** its new firmware (`TBBLUE.FW` 1.46) needs a newer ZX Next core than this
-one (3.02.00): after you choose a personality, the machine resets back to the firmware screen.
-Use the firmware of 24.11 instead: copy `TBBLUE.FW` and `TBBLUE.TBU` from `sn-complete-24.11.zip`
-over the ones of 26.11 in the root of the image. Tested on the R6: NextZXOS 2.10 boots, Next
-games run (Santa's Pressie, Warhawk).
+**System/Next 26.11 with V1.2 or older:** its firmware (`TBBLUE.FW` 1.46) needs the newer ZX Next
+core of V1.3: on V1.2 the machine resets back to the firmware screen after you choose a
+personality. Update to V1.3, or use the firmware of 24.11: copy `TBBLUE.FW` and `TBBLUE.TBU` from
+`sn-complete-24.11.zip` over the ones of 26.11 in the root of the image.
 
 ### MegaZXNext boot screen (optional)
 
@@ -179,7 +182,7 @@ Installation
 1. **The ZX Next SD card image** (see above). Use one of:
    * the `boot.vhd` of the MiSTer core (in the `releases` folder of
      [ZXNext_MiSTer](https://github.com/MiSTer-devel/ZXNext_MISTer)), or
-   * an image file of a ZX Next SD card with the System/Next distribution (tested: 24.11).
+   * an image file of a ZX Next SD card with the System/Next distribution (tested: 26.11 and 24.11).
 
    Copy it to the MEGA65's SD card as **`/zxnext/boot.vhd`** or **`/zxnext/boot.img`**. The
    file does not need to be contiguous (up to 512 fragments are fine). Remember: a card in the
@@ -294,8 +297,6 @@ Known issues
   machine ID the core reports). `tools/bootscreen` changes it to the MegaZXNext logo (see "What
   goes on the SD card").
 * +3 disk images (.DSK) have not been tested yet.
-* System/Next 26.11: firmware 1.46 resets after the personality menu. Use the 24.11 firmware
-  (see "What goes on the SD card"). Supporting 1.46 needs a core update.
 
 Reporting issues
 ----------------
