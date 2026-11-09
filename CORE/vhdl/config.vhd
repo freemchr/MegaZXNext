@@ -43,6 +43,8 @@ constant CHR_LINE_50 : string := CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_10 & CHR_L
 constant CHR_ESC     : character := character'val(27);
 constant COL_STD     : string := CHR_ESC & character'val(16#0B#);
 constant COL_TTLE    : string := CHR_ESC & character'val(16#0E#);
+-- the credit line: a black band (colour 14) with letters in the Spectrum rainbow (colours 13, 12, 11, 15)
+constant COL_BAND    : string := CHR_ESC & character'val(16#70#);
 
 --------------------------------------------------------------------------------------------------------------------
 -- Welcome and Help Screens (Selectors 0x1000 .. 0x1FFF)
@@ -146,9 +148,16 @@ constant SCR_WELCOME : string :=
    "\n" &
    COL_TTLE & "               Version 1.3-test1\n" & COL_STD &
    "\n" &
-   "Ported by Chris Freeman\n" &
-   "based on ZXNext_MISTer\n" &
-   "Powered by MiSTer2MEGA65 V2.0.1\n\n" &
+   "         " & COL_BAND & " " &
+   CHR_ESC & character'val(16#75#) & "P" & CHR_ESC & character'val(16#74#) & "o" & CHR_ESC & character'val(16#73#) & "r" & CHR_ESC & character'val(16#77#) & "t" &
+   CHR_ESC & character'val(16#75#) & "e" & CHR_ESC & character'val(16#74#) & "d" & " " & CHR_ESC & character'val(16#73#) & "b" &
+   CHR_ESC & character'val(16#77#) & "y" & " " & CHR_ESC & character'val(16#75#) & "C" & CHR_ESC & character'val(16#74#) & "h" &
+   CHR_ESC & character'val(16#73#) & "r" & CHR_ESC & character'val(16#77#) & "i" & CHR_ESC & character'val(16#75#) & "s" & " " &
+   CHR_ESC & character'val(16#74#) & "F" & CHR_ESC & character'val(16#73#) & "r" & CHR_ESC & character'val(16#77#) & "e" & CHR_ESC & character'val(16#75#) & "e" &
+   CHR_ESC & character'val(16#74#) & "m" & CHR_ESC & character'val(16#73#) & "a" & CHR_ESC & character'val(16#77#) & "n" &
+   COL_BAND & " " & COL_STD & "\n" &
+   "          based on ZXNext_MISTer\n" &
+   "      Powered by MiSTer2MEGA65 V2.0.1\n\n" &
    "The ZX Next boots from an image of its SD\n" &
    "card (e.g. the MiSTer boot.vhd) on the\n" &
    "MEGA65 SD card (FAT32) as /zxnext/boot.vhd\n" &
