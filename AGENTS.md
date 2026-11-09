@@ -33,8 +33,10 @@ on the task, not on rediscovering the layout.
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
   files listed in §4: board tops, OSM palette, colour escape), QNICE submodule at `2eb27dd` (V2.0.1's pin).
-- **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.2 is released** (V1.1 + Amiga mouse)
-  (R6 and R3 tested; R4/R5 builds included, untested; settings file tested on R6). On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
+- **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.3 is released** (V1.2 + core 3.02.04,
+  System/Next 26.11 boots; OSD in Spectrum colours). V1.3's core changes tested on the R6 with a test build;
+  the released V1.3 bitstreams were not run on hardware before release. V1.2 was tested on R6 and R3/R3A;
+  R4/R5 builds included, untested; settings file tested on R6. On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
   work. The V0.2 grey screen after resets was reported gone with the V0.3 build (SDRAM read hold
   timing fix, §3.2). Everything else is unverified until someone runs it on a MEGA65. The maintainer can only test
   on R6; R4/R5 are untested and need outside testers before they are called working.
@@ -51,7 +53,7 @@ RogueCraft DX) returns to the NextZXOS menu, as expected. The same tester later 
 Tested on an R6: an R6 build with
 `G_RAM_BRAM` forced to true (bram_zxn instead of the SDRAM) boots NextZXOS, `.MEM` shows 768K and
 Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
-256 of the 365 RAMB36: the R3 build is at 316.
+256 of the 365 RAMB36: the R3 build is at 327.5 (V1.3; V1.2: 316).
 
 ---
 
