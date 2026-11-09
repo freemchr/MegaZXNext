@@ -32,6 +32,31 @@ When you update the submodule:
    the file lists of **all four** `CORE/CORE-R*.xpr` (library `zxnext`).
 3. Update the commit in this file and in `AGENTS.md` §1.
 
+Official ZX Next core ZX_Spectrum_Next_FPGA (core 3.02.04)
+----------------------------------------------------------
+
+The submodule `CORE/ZX_Spectrum_Next_FPGA` points to
+https://gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA (branch `30204`, commit `dc8d764`, "CORE VERSION 3.02.04") and is
+**not modified**. It brings the core from the MiSTer version (upstream `60e8343`, Sept 2023,
+plus MiSTer changes) to 3.02.04:
+
+* `rtl/zxnext.vhd` is replaced by `CORE/vhdl/zxnext/zxnext.vhd`: a three-way merge
+  (`git merge-file`, base = upstream `60e8343`, ours = MiSTer, theirs = `dc8d764`, 3.02.04). The seven
+  conflicts were resolved as follows: `g_option` added as a generic (default 0) while
+  `g_board_issue` stays a MiSTer port; CPU option generates from upstream but only `gen_cpu_00`
+  kept (MiSTer t80n); memory cycle from upstream (requests at MREQ, the `memcycle_count` delay
+  is gone; MiSTer `i_RAM_A_REQ_ALLOW` unused); nextreg 0x10 MiSTer (inline); TZX hotkeys from
+  upstream (off); csync and XADC/XDNA MiSTer (removed). Upstream's `g_board_issue`
+  generates use the constant `C_BOARD_ISSUE` (0); nextreg 0x04 is cleared on a boot reset as in MiSTer. Every change carries
+  "MegaZXNext".
+* `bootrom`, `ctc`, `ctc_chan`, `sprites` (unchanged by MiSTer) and the new `arbiter_dma`,
+  `spi_slave`, `pi_debug_control_param` are compiled from this submodule.
+* `spi_master` and the `t80n*` CPU files stay MiSTer's.
+
+To move to a newer upstream: repeat the merge with base = `dc8d764` and theirs = the new
+commit, `git merge-file CORE/vhdl/zxnext/zxnext.vhd <base> <theirs>`; then the other files
+as above. Upstream's own top (`zxnext_top_issue*.vhd`) shows which ports are new.
+
 ### `rtl/mister/zxnext_top.vhd` → `zxnext_top_m65.vhd`
 
 The MEGA65 top level of the ZX Next (entity `zxnext_top_m65`). Changes:
@@ -109,10 +134,31 @@ When you update M2M, re-apply 1, 2 and 4 to the new board tops (a three-way merg
 of the old stock file, the new stock file and our file works).
 `doc/m2m-v2.1.0-upgrade.md` describes the update to V2.1.0.
 
+**OSM colours and the welcome screen badge** (the same change as in MegaST, marked
+`MegaZXNext` in the files):
+
+5. `M2M/vhdl/av_pipeline/vga_osm.vhd`: the 16 colours of the attribute bits
+   {dark, R, G, B} come from the generic `G_OSM_PALETTE` (24 bits per colour,
+   colour i in bits 24*i+23..24*i) instead of being computed (R, G, B at FF, 7F
+   when dark). The default is that M2M palette.
+6. `video_overlay.vhd`, `analog_pipeline.vhd`, `digital_pipeline.vhd`,
+   `av_pipeline.vhd`, `framework.vhd`: pass the generic on; `framework.vhd`
+   takes `OSM_PALETTE` from `globals.vhd` (a ZX Spectrum look: black ink on
+   white paper, blue headlines, the badge colours in the dark half).
+7. `M2M/rom/screen.asm`, `SCR$PRINTSTR`: ESC (0x1B) followed by an attribute
+   byte sets the attribute of the following characters (written into the
+   attribute VRAM at the same address). Without ESC nothing changes. Used by the
+   welcome screen (`SCR_LOGO` and the headlines in `config.vhd`).
+
+The badge itself is core side: `CORE/font/MegaZXNext-16x16.rom` is the M2M font
+with 138 badge characters in codes the core does not print (`FONT_FILE` in
+`globals.vhd`), written by `tools/osd_logo.py` together with `SCR_LOGO`. When you
+update M2M, re-apply 5 to 7 (all generic, candidates for upstream).
+
 QNICE
 -----
 
-No changes to QNICE or to `M2M/rom`. The core specific Shell code is in
+No changes to QNICE. `M2M/rom/screen.asm`: the colour escape (7 above). The core specific Shell code is in
 `CORE/m2m-rom/m2m-rom.asm`: `PREP_START` mounts the ZX Next's SD card image
 (`ZXN_MOUNT`), and the heap is 64 words smaller than in the template to make
 room for its variables.

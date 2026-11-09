@@ -21,13 +21,18 @@ on the task, not on rediscovering the layout.
   Layer 2 / tilemap / sprites, AY×3, DivMMC, Multiface, 2 MB RAM). It boots its firmware
   (`TBBLUE.FW`, `TBBLUE.TBU`), ROMs and NextZXOS **from its own SD card**, which on the MEGA65
   (as on MiSTer) is an **image file**: `/zxnext/boot.vhd` or `/zxnext/boot.img` on the MEGA65's
-  SD card. Core version 3.02.00, which matches System/Next 24.11 (the latest distribution).
+  SD card. Core version **3.02.04** (since V1.3; V1.2 and older: 3.02.00, which
+  matches System/Next 24.11). 3.02.04 boots 26.11 (FW 1.46) and 24.11 on the R6. System/Next 26.11 ships core 3.03.00, whose source is not public.
 - **MiSTer core:** [MiSTer-devel/ZXNext_MISTer](https://github.com/MiSTer-devel/ZXNext_MISTer),
   pinned as the git submodule `CORE/ZXNext_MiSTer` (commit `7daebd1`). Original ZX Next RTL
   by Alvin Albrecht, Fabio Belavenuto, Victor Trucco et al.; MiSTer port by Sorgelig.
+- **Official ZX Next core:** [SpectrumNext/ZX_Spectrum_Next_FPGA](https://gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA),
+  submodule `CORE/ZX_Spectrum_Next_FPGA` (branch `30204`, commit `dc8d764`, "CORE VERSION 3.02.04"). The MiSTer
+  RTL is upstream `60e8343` (Sept 2023) plus MiSTer changes; `CORE/vhdl/zxnext/zxnext.vhd` is the
+  three-way merge of the two (§4).
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
-  four top files listed in §4), QNICE submodule at `2eb27dd` (V2.0.1's pin).
+  files listed in §4: board tops, OSM palette, colour escape), QNICE submodule at `2eb27dd` (V2.0.1's pin).
 - **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.2 is released** (V1.1 + Amiga mouse)
   (R6 and R3 tested; R4/R5 builds included, untested; settings file tested on R6). On R6: NextZXOS boots from `/zxnext/boot.img`; its menus, 48K BASIC, the Browser, .TAP loading and a Kempston joystick
   work. The V0.2 grey screen after resets was reported gone with the V0.3 build (SDRAM read hold
@@ -59,7 +64,7 @@ Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 ├── AUTHORS                 credits for everything the core uses
 ├── VERSIONS.md             this core's changelog (M2M's own is upstream)
 ├── M2M/                    the MiSTer2MEGA65 framework, V2.0.1. Read-only EXCEPT the
-│                           four board tops listed in §4. M2M/QNICE = QNICE submodule.
+│                           files listed in §4 (board tops, OSM colours). M2M/QNICE = QNICE submodule.
 ├── CORE/
 │   ├── ZXNext_MiSTer/      ← submodule, UNMODIFIED. All RTL is compiled from here (library "zxnext")
 │   │                         except the files that CORE/vhdl/zxnext/ replaces.
@@ -86,7 +91,9 @@ Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 │   ├── CORE.xdc            core clocks, CPU BUFGMUX clocks, multicycles, SD pins (all boards)
 │   ├── CORE-SDRAM.xdc      SDRAM multicycles, IOB packing, I/O timing (R4/R5/R6 .xpr only)
 │   └── CORE-R{3,4,5,6}.xpr Vivado 2026.1 projects (same sources, different top/XDC/G_BOARD)
+├── CORE/font/MegaZXNext-16x16.rom  OSD font: M2M font + the badge characters (tools/osd_logo.py)
 ├── release/zxnext/zxncfg   empty settings file (31 × 0xFF) for /zxnext/zxncfg on the SD card
+├── tools/osd_logo.py       badge on the OSD welcome screen: font characters + SCR_LOGO in config.vhd
 ├── tools/bootscreen/       patches TBBLUE.FW: MegaZXNext logo instead of "MiSTer Next" (Python)
 └── doc/
     ├── m2m/                M2M conventions; exceptions.md = how to re-apply our changes on updates
@@ -253,8 +260,8 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
   Detected when up and down (or left and right) are low at once, which a joystick cannot do;
   from then on that port is no Kempston joystick until a ZX Next hard reset (long reset press).
   Quadrature steps are counted at full resolution; nextreg 0x0A DPI picks the 8 bits the ZX Next
-  sees (default /2), bit 2 swaps the buttons. Left button = fire; right/middle = POT X/Y differing
-  by more than 64 from their value at detection. `make mouse` in `CORE/sim` tests it. Works on
+  sees (default /2), bit 3 swaps the buttons. Left button = fire; right/middle = POT X/Y differing
+  by more than 64 from their value at detection. `make mouse` in `CORE/sim` tests it; `make mouse_reg` checks that nextreg 0x0A bit 3 (not 2) reaches `main.vhd` as the swap. Works on
   the R6 (Amiga mouse in port 1: both axes, left and right button) and an R3A (MouSTer adapter
   in Amiga mode, port 1: movement, all three buttons); port 2 untested.
 - RTC: MiSTer's `rtc` (DS1307 over I²C) fed from `main_rtc_i`.
@@ -290,8 +297,14 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
 | `rtl/cpu/t80n.vhd` | `CORE/vhdl/zxnext/t80n.vhd` | 9-bit vs 4-bit mask length mismatch (`x"7"` → `"000000111"`) |
 | `rtl/mister/sdram.sv` | `CORE/vhdl/sdram_zxn.vhd` | VHDL translation for the MEGA65 SDRAM at 112 MHz (see §3.2) |
 | `sys/sd_card.sv` | `CORE/vhdl/sd_card_zxn.vhd` | VHDL translation (SDHC, 8-bit buffer, `zxnext.dpram`), plus `idle_o` for the CPU wait (see §3.3) |
+| `rtl/zxnext.vhd` | `CORE/vhdl/zxnext/zxnext.vhd` | Core 3.02.04: MiSTer's version three-way merged with upstream (base `60e8343`, theirs `dc8d764` = 3.02.04). Board-issue generates use the constant `C_BOARD_ISSUE` = 0 (Issue 2-4 logic, 2 MB); only the plain t80n (`g_option` = 0: no Pi debug, port C, TZX hotkeys); nextreg 0x04 keeps MiSTer's boot reset; csync removed (gone upstream) |
+| `rtl/rom/bootrom.vhd`, `rtl/device/ctc.vhd`, `ctc_chan.vhd`, `rtl/video/sprites.vhd` | same files in `CORE/ZX_Spectrum_Next_FPGA` | Upstream 3.02.04 versions (MiSTer had not changed them) |
+| (new since 3.02.01) | `arbiter_dma.vhd`, `spi_slave.vhd`, `pi_debug_control_param.vhd` from `CORE/ZX_Spectrum_Next_FPGA` | Only instantiated in disabled generates, but needed for analysis |
 
-When bumping the submodule, diff these five upstream files against the version the replacement
+`spi_master.vhd` and the CPU (`t80n*`) stay MiSTer's: MiSTer uses Mike Stirling's SPI master and
+Sorgelig's t80n with MEMPTR; upstream's changes to them are not applied.
+
+When bumping a submodule, diff the upstream files above against the version the replacement
 was made from and carry over any changes. The `.xpr` files list each MiSTer RTL file
 explicitly (library `zxnext`), so files that upstream adds or renames must be added by hand
 to **all four** `.xpr`s.
@@ -301,7 +314,10 @@ changed. R4-R6 (a) remove the SDRAM tie-offs, adds the DQ tri-state generate and
 pins to the CORE; all four (b) route the framework's SD outputs (`sd_reset/clk/mosi`, `sd2_*`) through
 the CORE's `fw_sd*_i` ports, which drives the pins (`sd_*`/`sd2_*` outputs); MISO and card detect
 go from the pins to the framework directly, MISO also to the CORE; and (c) also connect the raw
-joystick pins of both ports to the CORE's `joy_1_pins_n_i`/`joy_2_pins_n_i` (Amiga mouse). Re-apply
+joystick pins of both ports to the CORE's `joy_1_pins_n_i`/`joy_2_pins_n_i` (Amiga mouse). Also changed
+(V1.3, from MegaST): the OSM palette comes from `OSM_PALETTE` in `globals.vhd` (generic `G_OSM_PALETTE`
+through `framework.vhd` → `av_pipeline` → `analog/digital_pipeline` → `video_overlay` → `vga_osm.vhd`), and
+`M2M/rom/screen.asm` `SCR$PRINTSTR` takes ESC + attribute byte (colours on the welcome screen). Re-apply
 all of them when updating M2M. See `doc/m2m/exceptions.md` and `doc/m2m-v2.1.0-upgrade.md`.
 
 **QNICE:** none.
@@ -318,7 +334,7 @@ git submodule update --init                 # CORE/ZXNext_MiSTer and M2M/QNICE
 ( cd CORE/m2m-rom && ./make_rom.sh )
 
 # Simulations (GHDL): SDRAM controller and SD card image
-( cd CORE/sim && make )                     # or: make sdram / sd / speed / speed_bram (R3 RAM) / mouse; make clean
+( cd CORE/sim && make )                     # or: make sdram / sd / speed / speed_bram (R3 RAM) / mouse / mouse_reg; make clean
 
 # Bitstream: open CORE/CORE-R6.xpr (or R4/R5) in Vivado 2026.1 →
 #   Run Synthesis → Run Implementation → Generate Bitstream

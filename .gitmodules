@@ -4,3 +4,6 @@
 [submodule "CORE/ZXNext_MiSTer"]
 	path = CORE/ZXNext_MiSTer
 	url = https://github.com/MiSTer-devel/ZXNext_MISTer.git
+[submodule "CORE/ZX_Spectrum_Next_FPGA"]
+	path = CORE/ZX_Spectrum_Next_FPGA
+	url = https://gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA.git

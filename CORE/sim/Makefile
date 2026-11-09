@@ -6,6 +6,7 @@
 #    make speed      CPU speed changes: ZX Next + sdram_zxn + SDRAM model, test boot ROM
 #    make speed_bram the same with bram_zxn (R3: 1 MB of block RAM)
 #    make mouse      amiga_mouse.vhd (Amiga mouse in a joystick port)
+#    make mouse_reg  nextreg 0x0A -> mouse_control_o (button swap = bit 3, DPI): ZX Next + bram_zxn
 #    make boot       the ZX Next from reset with an ideal memory (not part of make)
 #    make GHDL=...   use a specific GHDL binary
 #
@@ -20,8 +21,8 @@ SDRAM_SRCS := ../vhdl/sdram_zxn.vhd sdram_model_ram.vhd sdram_model.vhd tb_sdram
 SD_SRCS    := ../ZXNext_MiSTer/rtl/serial/spi_master.vhd $(WORK)/sd_spi_sim.vhd \
               ../vhdl/sd_card_zxn.vhd ../vhdl/sd_image.vhd tb_sd_image.vhd
 
-.PHONY: sim sdram sd speed speed_bram mouse boot clean
-sim: sdram sd speed speed_bram mouse
+.PHONY: sim sdram sd speed speed_bram mouse mouse_reg boot clean
+sim: sdram sd speed speed_bram mouse mouse_reg
 
 sdram:
 	mkdir -p $(WORK)
@@ -83,6 +84,23 @@ speed:
 # The same with bram_zxn: run after "make speed" (uses its build)
 speed_bram: speed
 	$(GHDL) -r $(STD) --workdir=$(WORK) -P$(WORK) tb_cpu_speed -gG_BRAM=true --assert-level=error --ieee-asserts=disable
+
+# The ZX Next with bram_zxn, the boot ROM replaced by the test program of mk_mouse_reg_rom.py
+# (own build directory: its bootrom entity differs from the one of "make speed")
+MREG := $(WORK)/mouse_reg
+mouse_reg:
+	mkdir -p $(MREG)
+	sed 's/std_logic_vector(to_unsigned(-1,stored.length-1))/(stored\x27length-2 downto 0 => \x271\x27)/' \
+	   ../ZXNext_MiSTer/rtl/serial/fifop.vhd > $(MREG)/fifop_sim.vhd
+	grep -q "downto 0 => '1')" $(MREG)/fifop_sim.vhd
+	python3 mk_mouse_reg_rom.py $(MREG)/bootrom_mouse_reg.vhd
+	$(GHDL) -a $(STD) --workdir=$(MREG) --work=unisim unisim_sim.vhd
+	$(GHDL) -i $(STD) --workdir=$(MREG) --work=zxnext $(filter-out %/fifop.vhd %/bootrom.vhd,$(ZXNEXT_SRCS)) \
+	   $(MREG)/fifop_sim.vhd $(MREG)/bootrom_mouse_reg.vhd
+	$(GHDL) -m $(STD) --workdir=$(MREG) -P$(MREG) --work=zxnext zxnext_top_m65
+	$(GHDL) -a $(STD) --workdir=$(MREG) -P$(MREG) ../vhdl/bram_zxn.vhd tb_mouse_reg.vhd
+	$(GHDL) -e $(STD) --workdir=$(MREG) -P$(MREG) tb_mouse_reg
+	$(GHDL) -r $(STD) --workdir=$(MREG) -P$(MREG) tb_mouse_reg --assert-level=error --ieee-asserts=disable
 
 clean:
 	rm -rf $(WORK) *.cf *.ghw

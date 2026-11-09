@@ -1,3 +1,18 @@
+Version 1.3 - November 2026
+===========================
+
+V1.2 with a newer ZX Next core, and a ZX Spectrum look for the options menu.
+
+* **ZX Next core 3.02.04** (was 3.02.00): the official ZX Next VHDL 3.02.04 merged into the
+  MiSTer-derived files, with the new boot ROM. **System/Next 26.11** (firmware 1.46) now boots:
+  with V1.2 it reset back to the firmware screen after the personality menu (issue #1). Tested
+  on the R6 with 26.11 as shipped (NextZXOS menu, 48K BASIC, Browser, games, F13, Reset ZX Next)
+  and with a 24.11 image (boots, games run).
+* **Options menu in ZX Spectrum colours:** black ink on white paper, Spectrum blue headlines,
+  the MegaZXNext badge and a rainbow credit line on the welcome screen.
+* Your `/zxnext/zxncfg` settings file from V1.1/V1.2 keeps working (the menu has not changed).
+* R3/R3A, R4 and R5 builds included; V1.3 has only been tested on the R6 so far.
+
 Version 1.2 - October 2026
 ==========================
 
