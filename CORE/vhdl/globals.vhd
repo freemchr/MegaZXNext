@@ -71,10 +71,11 @@ constant FONT_DY              : natural := 16;
 --    MegaZXNext: OSM_PALETTE  the 16 OSM colours (vga_osm.vhd): colour i = attribute bits {dark, R, G, B} in bits
 --    24*i+23..24*i. The M2M firmware draws text in colour 3 on colour 1 (M2M$SA_COL_STD), headlines in colour 6,
 --    selections inverse: here a ZX Spectrum look (black ink on white paper, Spectrum blue headlines, black
---    selection bar). The dark half (8..15) holds the logo colours (tools/osd_logo.py), colour 0 the logo's grey
+--    selection bar). The dark half (8..15) holds the logo colours (tools/osd_logo.py), black and cyan (with the logo's
+--    red, yellow and green: the rainbow credit line on the welcome screen), colour 0 the logo's grey
 --    on the white background.
 constant OSM_PALETTE          : std_logic_vector(16*24-1 downto 0) :=
-   x"FFFFFF" &    -- 15
+   x"00D7D7" &    -- 15 Spectrum cyan (the rainbow credit line)
    x"000000" &    -- 14
    x"DF4301" &    -- 13 logo: orange
    x"F7F62A" &    -- 12 logo: yellow
