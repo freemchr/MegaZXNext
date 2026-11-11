@@ -146,7 +146,7 @@ constant SCR_LOGO : string :=
 constant SCR_WELCOME : string :=
    SCR_LOGO &
    "\n" &
-   COL_TTLE & "                  Version 1.3\n" & COL_STD &
+   COL_TTLE & "              Version 1.4 test 1\n" & COL_STD &
    "\n" &
    "         " & COL_BAND & " " &
    CHR_ESC & character'val(16#75#) & "P" & CHR_ESC & character'val(16#74#) & "o" & CHR_ESC & character'val(16#73#) & "r" & CHR_ESC & character'val(16#77#) & "t" &
@@ -177,7 +177,7 @@ constant SCR_WELCOME : string :=
    COL_TTLE & "    Press Space to continue.\n";
 
 constant HELP_1 : string :=
-   "\n MegaZXNext V1.3\n" &
+   "\n MegaZXNext V1.4 test 1\n" &
    " a ZX Next core for the MEGA65\n\n" &
    " Port of ZXNext_MISTer (Alvin Albrecht,\n" &
    " Victor Trucco, Fabio Belavenuto, Sorgelig)\n" &
@@ -324,7 +324,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "MEGAZXNEXT V1.3";
+constant CORENAME          : string := "MEGAZXNEXT V1.4-TEST1";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
