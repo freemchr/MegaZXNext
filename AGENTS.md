@@ -32,7 +32,7 @@ on the task, not on rediscovering the layout.
   three-way merge of the two (§4).
 - **MEGA65 port:** Chris Freeman, 2026, GPL v3. Repo: https://github.com/freemchr/MegaZXNext
 - **Framework:** M2M **V2.0.1** (`M2M/` tree identical to upstream tag `V2.0.1` except the
-  files listed in §4: board tops, OSM palette, colour escape), QNICE submodule at `2eb27dd` (V2.0.1's pin).
+  files listed in §4: board tops, OSM palette, colour escape, VGA line doubler), QNICE submodule at `2eb27dd` (V2.0.1's pin).
 - **Status:** R3, R4, R5 and R6 synthesize with Vivado 2026.1 and meet timing (R3: 1 MB, §1). **V1.3 is released** (V1.2 + core 3.02.04,
   System/Next 26.11 boots; OSD in Spectrum colours). V1.3's core changes tested on the R6 with a test build;
   the released V1.3 bitstreams were not run on hardware before release. V1.2 was tested on R6 and R3/R3A;
@@ -53,7 +53,7 @@ RogueCraft DX) returns to the NextZXOS menu, as expected. The same tester later 
 Tested on an R6: an R6 build with
 `G_RAM_BRAM` forced to true (bram_zxn instead of the SDRAM) boots NextZXOS, `.MEM` shows 768K and
 Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
-256 of the 365 RAMB36: the R3 build is at 327.5 (V1.3; V1.2: 316).
+256 of the 365 RAMB36: the R3 build is at 320 (with the VGA line doubler; V1.3: 327.5, V1.2: 316).
 
 ---
 
@@ -89,7 +89,8 @@ Warhawk Next (Layer 2) runs. 1 MB of block RAM uses
 │   │       └── t80n.vhd            patched copy of rtl/cpu/t80n.vhd (vector-length fix Vivado needs)
 │   ├── m2m-rom/            QNICE Shell ROM (m2m-rom.asm: PREP_START mounts the SD card image;
 │   │                         zxn_mount.asm image/card, zxn_cfg.asm settings file)
-│   ├── sim/                GHDL testbenches: sdram_zxn (+ MJoergen's SDRAM model, MIT), sd_image
+│   ├── sim/                GHDL testbenches: sdram_zxn (+ MJoergen's SDRAM model, MIT), sd_image;
+│   │                         scandoubler/ (xsim): the VGA line doubler with the ZX Next raster
 │   ├── CORE.xdc            core clocks, CPU BUFGMUX clocks, multicycles, SD pins (all boards)
 │   ├── CORE-SDRAM.xdc      SDRAM multicycles, IOB packing, I/O timing (R4/R5/R6 .xpr only)
 │   └── CORE-R{3,4,5,6}.xpr Vivado 2026.1 projects (same sources, different top/XDC/G_BOARD)
@@ -286,6 +287,21 @@ M2M/vhdl/top_mega65-rX.vhd             (PATCHED: R4/R5/R6 SDRAM to CORE; R3-R6 S
   `OPTM_SIZE` = number of lines in `OPTM_ITEMS` = number of entries in `OPTM_GROUPS`.
 - `cpu_speed_sw_i` on `main` is tied to `'0'`: there is no CPU speed menu item (use F13).
 
+### 3.6 VGA scandoubler (`VGA_LINEDOUBLER`)
+
+- The analog "Standard VGA" mode doubles the lines with M2M's copy of MiSTer's `video_mixer` /
+  `scandoubler.v`. Its Hq2x path spends four clock enables on every input pixel, so it needs a
+  video clock of 4x the pixel rate (MiSTer clocks it at 56 MHz). Ours is the 28 MHz main clock with
+  a 14 MHz pixel enable: Hq2x kept every second pixel, which broke 14 MHz detail (Timex hi-res,
+  80 columns, Layer 2 640x256) on VGA only (issue #2; HDMI and the 15 kHz modes don't use it).
+- `VGA_LINEDOUBLER = true` (`globals.vhd`) selects the plain line doubler that sy2002 wrote for
+  AExp (AExp issue #36): a two-line LUTRAM buffer, one write per input enable, each line read
+  twice, so two clocks per pixel are enough. Lines come out one output line (32 µs) earlier, Hq2x's
+  block RAM is freed, and there is no Hq2x filter (the core never had a menu item for it).
+- Test: `cd CORE/sim && make scandoubler` (Vivado xsim, not part of `make`): the real mixer with
+  the ZX Next's 50 Hz raster. LINEDOUBLER = 1 must show every line complete and twice; Hq2x is the
+  red control and must show the dropped pixels.
+
 ---
 
 ## 4. Deviations from upstream (keep this list complete)
@@ -319,8 +335,12 @@ go from the pins to the framework directly, MISO also to the CORE; and (c) also 
 joystick pins of both ports to the CORE's `joy_1_pins_n_i`/`joy_2_pins_n_i` (Amiga mouse). Also changed
 (V1.3, from MegaST): the OSM palette comes from `OSM_PALETTE` in `globals.vhd` (generic `G_OSM_PALETTE`
 through `framework.vhd` → `av_pipeline` → `analog/digital_pipeline` → `video_overlay` → `vga_osm.vhd`), and
-`M2M/rom/screen.asm` `SCR$PRINTSTR` takes ESC + attribute byte (colours on the welcome screen). Re-apply
-all of them when updating M2M. See `doc/m2m/exceptions.md` and `doc/m2m-v2.1.0-upgrade.md`.
+`M2M/rom/screen.asm` `SCR$PRINTSTR` takes ESC + attribute byte (colours on the welcome screen). Also
+changed (from AExp `f4b5fdb`, GitHub issue #2): `M2M/vhdl/controllers/MiSTer/scandoubler.v` and
+`video_mixer.sv` (copied verbatim: a plain line doubler, parameter `LINEDOUBLER`) and the generic
+`G_VGA_LINEDOUBLER` through `framework.vhd` → `av_pipeline.vhd` → `analog_pipeline.vhd`, set from
+`VGA_LINEDOUBLER` in `globals.vhd` (§3.6). The generic defaults to false: an M2M update that drops it
+still builds and silently brings the hi-res VGA bug back. Re-apply all of them when updating M2M. See `doc/m2m/exceptions.md` and `doc/m2m-v2.1.0-upgrade.md`.
 
 **QNICE:** none.
 
@@ -337,6 +357,7 @@ git submodule update --init                 # CORE/ZXNext_MiSTer and M2M/QNICE
 
 # Simulations (GHDL): SDRAM controller and SD card image
 ( cd CORE/sim && make )                     # or: make sdram / sd / speed / speed_bram (R3 RAM) / mouse / mouse_reg; make clean
+( cd CORE/sim && make scandoubler )         # VGA scandoubler, needs Vivado xsim (not part of make)
 
 # Bitstream: open CORE/CORE-R6.xpr (or R4/R5) in Vivado 2026.1 →
 #   Run Synthesis → Run Implementation → Generate Bitstream

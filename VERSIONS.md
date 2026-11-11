@@ -1,3 +1,12 @@
+Version 1.4 - in progress
+=========================
+
+* **VGA: hi-res pictures complete** (issue #2): in the Standard VGA mode every second pixel of
+  the ZX Next's high-resolution modes (Timex hi-res, 80 columns, Layer 2 640x256) was lost,
+  because MiSTer's scandoubler needs four clocks per pixel and the core has two. The core now uses
+  the plain line doubler that sy2002 wrote for AExp, where the same bug was reported. HDMI and the
+  15 kHz modes were not affected. Not yet tested on a VGA monitor.
+
 Version 1.3 - November 2026
 ===========================
 

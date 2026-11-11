@@ -28,7 +28,11 @@ entity av_pipeline is
       G_FONT_FILE             : string;
       G_FONT_DX               : natural;
       G_FONT_DY               : natural;
-      G_OSM_PALETTE           : std_logic_vector(16*24-1 downto 0)   -- MegaZXNext: OSM colours (vga_osm.vhd)
+      G_OSM_PALETTE           : std_logic_vector(16*24-1 downto 0);  -- MegaZXNext: OSM colours (vga_osm.vhd)
+      -- MegaZXNext (from AExp f4b5fdb): true = the analog scandoubler doubles the lines with its
+      -- plain line doubler (needs video_clk_i >= 2 x the pixel rate of video_ce_i) instead of
+      -- MiSTer's Hq2x (needs 4 x). false keeps the original behaviour.
+      G_VGA_LINEDOUBLER       : boolean := false
    );
    port (
       -- From CORE
@@ -396,7 +400,8 @@ begin
          G_FONT_FILE             => G_FONT_FILE,
          G_FONT_DX               => G_FONT_DX,
          G_FONT_DY               => G_FONT_DY,
-         G_OSM_PALETTE           => G_OSM_PALETTE   -- MegaZXNext
+         G_OSM_PALETTE           => G_OSM_PALETTE,  -- MegaZXNext
+         G_VGA_LINEDOUBLER       => G_VGA_LINEDOUBLER   -- MegaZXNext: line doubler (AExp)
       )
       port map (
          -- Input from Core (video and audio)

@@ -104,7 +104,8 @@ hand, then run `cd CORE/sim && make sd`.
 MiSTer2MEGA65
 -------------
 
-Framework version: V2.0.1. Only the four board top files are changed:
+Framework version: V2.0.1. The four board top files are changed (1-4), plus the OSM colours
+(5-7) and the VGA line doubler (8-9) below:
 `M2M/vhdl/top_mega65-r3.vhd`, `top_mega65-r4.vhd`, `top_mega65-r5.vhd` and
 `top_mega65-r6.vhd`. In R4-R6 1, 2 and 4 below; in R3 (no SDRAM, the ZX Next
 RAM is block RAM) 2 and 4:
@@ -154,6 +155,22 @@ The badge itself is core side: `CORE/font/MegaZXNext-16x16.rom` is the M2M font
 with 138 badge characters in codes the core does not print (`FONT_FILE` in
 `globals.vhd`), written by `tools/osd_logo.py` together with `SCR_LOGO`. When you
 update M2M, re-apply 5 to 7 (all generic, candidates for upstream).
+
+**VGA line doubler** (GitHub issue #2, taken from sy2002's AExp commit `f4b5fdb`, AExp issue #36;
+marked `M2M-UPSTREAM line-doubler` in the Verilog and `MegaZXNext` in the VHDL):
+
+8. `M2M/vhdl/controllers/MiSTer/scandoubler.v` and `video_mixer.sv`: AExp's files, copied verbatim
+   (their base was byte-identical to V2.0.1). New parameter `LINEDOUBLER`: 1 = a plain line
+   doubler that needs only 2 clocks per pixel, 0 = MiSTer's Hq2x (unchanged, needs 4).
+9. `analog_pipeline.vhd` (generic on the `video_mixer` component and instance), `av_pipeline.vhd`,
+   `framework.vhd`: the generic `G_VGA_LINEDOUBLER` (default false), set from `VGA_LINEDOUBLER`
+   in `globals.vhd` (true). The ZX Next's 14 MHz pixel enable on the 28 MHz video clock is only 2
+   clocks per pixel; with Hq2x every second hi-res pixel is lost on VGA.
+
+When you update M2M, re-apply 8 and 9. **The default of the generic is false**: a copied stock
+`framework.vhd` or `analog_pipeline.vhd` still builds and the bug silently comes back. Check
+with `cd CORE/sim && make scandoubler`, and that `VGA_LINEDOUBLER` reaches `i_video_mixer`.
+If upstream M2M ever takes the line doubler, compare with AExp and drop ours.
 
 QNICE
 -----

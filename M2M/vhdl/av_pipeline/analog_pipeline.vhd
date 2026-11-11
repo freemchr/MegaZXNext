@@ -17,7 +17,11 @@ entity analog_pipeline is
       G_FONT_FILE             : string;
       G_FONT_DX               : natural;
       G_FONT_DY               : natural;
-      G_OSM_PALETTE           : std_logic_vector(16*24-1 downto 0)   -- MegaZXNext: OSM colours (vga_osm.vhd)
+      G_OSM_PALETTE           : std_logic_vector(16*24-1 downto 0);  -- MegaZXNext: OSM colours (vga_osm.vhd)
+      -- MegaZXNext (from AExp f4b5fdb, 2026-10-10): true = the scandoubler doubles the lines
+      -- with its plain line doubler, which needs only video_clk_i >= 2 x the pixel rate of
+      -- video_ce_i; false = MiSTer's Hq2x, which needs 4 x (original behaviour).
+      G_VGA_LINEDOUBLER       : boolean := false
    );
    port (
       -- Input from Core (video and audio)
@@ -95,6 +99,9 @@ architecture synthesis of analog_pipeline is
    signal vga_cs_ps          : std_logic;
 
    component video_mixer is
+      generic (
+         LINEDOUBLER : integer := 0                     -- MegaZXNext: line doubler (AExp)
+      );
       port (
          CLK_VIDEO   : in  std_logic;
          CE_PIXEL    : out std_logic;
@@ -133,6 +140,9 @@ begin
    --------------------------------------------------------------------------------------------------
 
    i_video_mixer : video_mixer
+      generic map (
+         LINEDOUBLER => boolean'pos(G_VGA_LINEDOUBLER)  -- MegaZXNext: line doubler (AExp)
+      )
       port map (
          CLK_VIDEO   => video_clk_i,
          CE_PIXEL    => open,

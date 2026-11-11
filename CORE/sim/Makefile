@@ -8,6 +8,8 @@
 #    make mouse      amiga_mouse.vhd (Amiga mouse in a joystick port)
 #    make mouse_reg  nextreg 0x0A -> mouse_control_o (button swap = bit 3, DPI): ZX Next + bram_zxn
 #    make boot       the ZX Next from reset with an ideal memory (not part of make)
+#    make scandoubler  VGA scandoubler (M2M video_mixer) with the ZX Next raster; needs Vivado
+#                    xsim, not part of make (scandoubler/run.sh)
 #    make GHDL=...   use a specific GHDL binary
 #
 # sdram_model.vhd and sdram_model_ram.vhd: SDRAM simulation model by MJoergen
@@ -21,7 +23,7 @@ SDRAM_SRCS := ../vhdl/sdram_zxn.vhd sdram_model_ram.vhd sdram_model.vhd tb_sdram
 SD_SRCS    := ../ZXNext_MiSTer/rtl/serial/spi_master.vhd $(WORK)/sd_spi_sim.vhd \
               ../vhdl/sd_card_zxn.vhd ../vhdl/sd_image.vhd tb_sd_image.vhd
 
-.PHONY: sim sdram sd speed speed_bram mouse mouse_reg boot clean
+.PHONY: sim sdram sd speed speed_bram mouse mouse_reg boot scandoubler clean
 sim: sdram sd speed speed_bram mouse mouse_reg
 
 sdram:
@@ -30,6 +32,10 @@ sdram:
 	$(GHDL) -a $(STD) --workdir=$(WORK) -P$(WORK) $(SDRAM_SRCS)
 	$(GHDL) -e $(STD) --workdir=$(WORK) -P$(WORK) tb_sdram_zxn
 	$(GHDL) -r $(STD) --workdir=$(WORK) -P$(WORK) tb_sdram_zxn --assert-level=error
+
+scandoubler:
+	mkdir -p $(WORK)/scandoubler
+	./scandoubler/run.sh $(WORK)/scandoubler
 
 mouse:
 	mkdir -p $(WORK)

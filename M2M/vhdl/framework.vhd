@@ -870,7 +870,8 @@ begin
          G_FONT_FILE             => FONT_FILE,
          G_FONT_DX               => FONT_DX,
          G_FONT_DY               => FONT_DY,
-         G_OSM_PALETTE           => OSM_PALETTE     -- MegaZXNext: globals.vhd
+         G_OSM_PALETTE           => OSM_PALETTE,    -- MegaZXNext: globals.vhd
+         G_VGA_LINEDOUBLER       => VGA_LINEDOUBLER -- MegaZXNext: globals.vhd (line doubler, AExp)
       )
       port map (
          -- Input from Core

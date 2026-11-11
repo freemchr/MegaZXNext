@@ -25,7 +25,18 @@ Starting point
 What V2.1.0 changes, and what that means here
 ---------------------------------------------
 
-**Drop-in** (unchanged locally, copy verbatim):
+> **Since this analysis, more framework files carry local changes.** The OSM palette (V1.3) and
+> the VGA line doubler (issue #2) change `framework.vhd`, `av_pipeline.vhd`, `analog_pipeline.vhd`
+> (and, for the palette, `digital_pipeline.vhd`, `video_overlay.vhd`, `vga_osm.vhd`, `screen.asm`),
+> and `M2M/vhdl/controllers/MiSTer/scandoubler.v` / `video_mixer.sv`. Those are **not drop-in
+> any more**: merge the V2.1.0 versions with ours (items 5-9 in `doc/m2m/exceptions.md`). In
+> particular `G_VGA_LINEDOUBLER` defaults to false, so copying stock `framework.vhd` or
+> `analog_pipeline.vhd` still builds but silently brings back the hi-res VGA bug. Afterwards run
+> `cd CORE/sim && make scandoubler` and check that `VGA_LINEDOUBLER` reaches `i_video_mixer`.
+> V2.1.0 does not change `scandoubler.v`/`video_mixer.sv` (as of `develop` `e7c7ace`); keep ours.
+
+**Drop-in** (unchanged locally, copy verbatim; see the note above for the files that are no
+longer unchanged):
 
 * `M2M/rom/{menu,options,shell,vdrives}.asm`, new `M2M/rom/menu_test.asm`. These add the
   OSM size checks (fatal error instead of a corrupted menu) and fix the Shell hang with two or

@@ -61,6 +61,13 @@ constant QNICE_CLK_SPEED      : natural := 50_000_000;   -- a change here has de
 constant VGA_DX               : natural := 720;
 constant VGA_DY               : natural := 576;
 
+-- Analog Standard VGA (scandoubler on): the framework's scandoubler runs on the 28 MHz main
+-- clock and the ZX Next's pixel enable is 14 MHz, only 2 x below it. MiSTer's Hq2x line
+-- doubling needs 4 x (MiSTer clocks it at 56 MHz) and drops every second 14 MHz pixel (hi-res,
+-- 80 columns, 640 x 256), so the scandoubler uses its plain line doubler instead (taken from
+-- AExp, GitHub issue #2). Needs a framework.vhd that passes it on (doc/m2m/exceptions.md).
+constant VGA_LINEDOUBLER      : boolean := true;
+
 --    FONT_*  size of one OSM character
 --    MegaZXNext: the M2M font with the MegaZXNext logo in codes the core does not print otherwise
 --    (tools/osd_logo.py), the path like QNICE_FIRMWARE_M2M
